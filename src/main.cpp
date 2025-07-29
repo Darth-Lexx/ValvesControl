@@ -56,6 +56,7 @@ void setup()
   SlaveMbSpeed = EEPROM.read(EEPROM_SPEED);
   Delta = EEPROM.read(EEPROM_DELTA);
   EEPROM.get(EEPROM_FLOW, Flow);
+  ChannelsEnable = EEPROM.read(EEPROM_CH_ENABLE);
 
   // проверка валидности прочитанных данных (сброс если не валидные или установлен пин сброса)
   if (SlaveMbAdr == 0 || SlaveMbAdr > 247 || reset)
@@ -77,6 +78,11 @@ void setup()
   {
     Flow = MBSL_FLOW_D;
     EEPROM.put(EEPROM_FLOW, Flow);
+  }
+  if (ChannelsEnable > 15 || reset)
+  {
+    ChannelsEnable = 15;
+    EEPROM.update(EEPROM_CH_ENABLE, ChannelsEnable);
   }
 }
 

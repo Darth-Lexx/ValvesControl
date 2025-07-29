@@ -20,8 +20,6 @@
 
 #define array_count(a) sizeof(a) / sizeof((a)[0])
 
-bool Channel1 = false, Channel2 = false, Channel3 = false, Channel4 = false;
-
 //--ModBus slave registers  --//
 #define MBSL_R_ADR          0       //rw
 #define MBSL_R_SPEED        1
@@ -66,11 +64,11 @@ bool Channel1 = false, Channel2 = false, Channel3 = false, Channel4 = false;
 #define PIN_OFF             0
 
 #define PIN_RESET           2
-#define PIN_H_VALVE        3
-#define PIN_L_VALVE        4
+#define PIN_H_VALVE         3
+#define PIN_L_VALVE         4
 #define PIN_N2_VALVE        5
-#define PIN_H_REL          6
-#define PIN_L_REL          7
+#define PIN_H_REL           6
+#define PIN_L_REL           7
 #define PIN_N2_REL          8
 #define PIN_CTRL1_POWER     9
 #define PIN_CTRL2_POWER     10
@@ -82,8 +80,8 @@ bool Channel1 = false, Channel2 = false, Channel3 = false, Channel4 = false;
 #define PIN_BTN_CH3         24
 #define PIN_BTN_CH4         25
 
-#define PIN_BTN_H          26
-#define PIN_BTN_L          27
+#define PIN_BTN_H           26
+#define PIN_BTN_L           27
 #define PIN_BTN_N2          28
 #define PIN_DE              53
 
@@ -92,6 +90,7 @@ bool Channel1 = false, Channel2 = false, Channel3 = false, Channel4 = false;
 #define EEPROM_SPEED        1
 #define EEPROM_FLOW         2 //float - 4b
 #define EEPROM_DELTA        6
+#define EEPROM_CH_ENABLE    7
 
 ButtonT<PIN_BTN_CH1> Channel1Button;
 ButtonT<PIN_BTN_CH2> Channel2Button;
@@ -104,7 +103,7 @@ ButtonT<PIN_BTN_N2> N2Button;
 ModbusRTUSlave MbSlave(SlaveSerial);
 ModbusRTUMaster MbMaster(MasterSerial, PIN_DE);
 
-byte SlaveMbAdr, SlaveMbSpeed, Delta;
+byte SlaveMbAdr, SlaveMbSpeed, Delta, ChannelsEnable;
 float Flow;
 
 #endif
