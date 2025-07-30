@@ -99,7 +99,8 @@
 //--//
 
 #define SlaveSerial Serial1
-#define MasterSerial Serial2
+#define MasterSerialAS200 Serial2
+#define MasterSerialAFM07 Serial3
 
 //--Pins                    --//
 #define PIN_ON 1
@@ -125,8 +126,10 @@
 #define PIN_BTN_H 26
 #define PIN_BTN_L 27
 #define PIN_BTN_N2 28
-#define PIN_RE 52
-#define PIN_DE 53
+#define PIN_RE_AS200 52
+#define PIN_DE_AS200 53
+#define PIN_RE_AFM07 50
+#define PIN_DE_AFM07 51
 
 ButtonT<PIN_BTN_CH1> Channel1Button;
 ButtonT<PIN_BTN_CH2> Channel2Button;
@@ -137,7 +140,8 @@ ButtonT<PIN_BTN_L> LowButton;
 ButtonT<PIN_BTN_N2> N2Button;
 
 ModbusRTUSlave MbSlave(SlaveSerial);
-ModbusRTUMaster MbMaster(MasterSerial, PIN_DE, PIN_RE);
+ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_RE_AS200, PIN_DE_AS200);
+ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_RE_AFM07, PIN_DE_AFM07);
 
 uint16_t SlaveRegs[17];
 uint16_t SlaveRWRegsActual[2];
@@ -149,7 +153,7 @@ union FloatConverter {
 
 struct ChannelStruct
 {
-    uint16_t AS200SetFlowArray[2];
+    uint16_t AS200SetFlowArray[2] = {0, 0};
     float getAS200SetFlow() const
     {
         // uint16_t tmp[2];
@@ -184,7 +188,7 @@ struct ChannelStruct
         AS200SetFlowArray[1] = converter.asWords[0];
     }
 
-    uint16_t AFM07Reg[5];
+    uint16_t AFM07Reg[5] = { 0,0,0,0,0};
     float getAFM07Acc() const
     {
         // uint16_t tmp[2];
@@ -202,8 +206,8 @@ struct ChannelStruct
         converter.asWords[1] = AFM07Reg[AFM07_ACC_FLOW_H];
         return converter.asFloat;
     }
-    byte AS200MbAdr;
-    byte AFM07MbAdr;
+    byte AS200MbAdr = 1;
+    byte AFM07MbAdr = 1;
     byte AS200MbError = 0;
     byte AFM07MbError = 0;
     byte AFM07OffSet = 0;
@@ -254,4 +258,5 @@ enum ErrorGroups
 };
 void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, uint8_t error);
 uint8_t getError(const uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num);
+
 #endif

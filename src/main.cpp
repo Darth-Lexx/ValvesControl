@@ -92,15 +92,15 @@ void setup()
     Channels[i]->AFM07MbAdr = 2 + i * 2;     // Адреса AFM07: 2, 4, 6, 8
     Channels[i]->setAS200SetFlow(Data.Flow); // Установка начального расхода для AS200
   }
-
-  MasterSerial.begin(115200, SERIAL_8N1);
-  MbMaster.begin(115200, SERIAL_8N1);
-
+  MasterSerialAS200.begin(38400, SERIAL_8N1);
+  AS200Master.begin(38400, SERIAL_8N1);
+  MasterSerialAFM07.begin(115200, SERIAL_8N1);
+  AFM07Master.begin(115200, SERIAL_8N1);
   for (byte i = 0; i < 4; i++)
   {
     // Чтение регистров
-    Channels[i]->AS200MbError = MbMaster.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H, Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
-    Channels[i]->AFM07MbError = MbMaster.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0, Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
+    Channels[i]->AS200MbError = AS200Master.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H, Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
+    Channels[i]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0, Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
 
     // Проверка ошибок и активация канала
     if (!Channels[i]->AS200MbError && !Channels[i]->AFM07MbError && Channels[i]->AFM07Reg[AFM07_STATUS])
@@ -130,37 +130,34 @@ void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, u
 {
   // Проверка входных данных
   if (device_num < 1 || device_num > 4)
+  {
     return;
+  }
 
   uint8_t bit_offset;
   uint16_t mask;
-  uint8_t max_errors;
 
   switch (errorType)
   {
   case AS200_COMM_ERROR:
-    max_errors = 15;
     bit_offset = 4 * (4 - device_num);
     mask = 0xF << bit_offset;
     data[6] = (data[6] & ~mask) | ((error & 0xF) << bit_offset);
     break;
 
   case AFM07_COMM_ERROR:
-    max_errors = 15;
     bit_offset = 4 * (4 - device_num);
     mask = 0xF << bit_offset;
     data[7] = (data[7] & ~mask) | ((error & 0xF) << bit_offset);
     break;
 
   case AFM07_INT_ERROR:
-    max_errors = 3;
     bit_offset = 8 + 2 * (4 - device_num);
     mask = 0x3 << bit_offset;
     data[8] = (data[8] & ~mask) | ((error & 0x3) << bit_offset);
     break;
 
   case CHANNEL_ERROR:
-    max_errors = 3;
     bit_offset = 2 * (4 - device_num);
     mask = 0x3 << bit_offset;
     data[8] = (data[8] & ~mask) | ((error & 0x3) << bit_offset);
