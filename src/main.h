@@ -142,6 +142,11 @@ ModbusRTUMaster MbMaster(MasterSerial, PIN_DE, PIN_RE);
 uint16_t SlaveRegs[17];
 uint16_t SlaveRWRegsActual[2];
 
+union FloatConverter {
+    float asFloat;
+    uint16_t asWords[2];
+};
+
 struct ChannelStruct
 {
     uint16_t AS200SetFlowArray[2];
@@ -152,22 +157,31 @@ struct ChannelStruct
         // tmp[1] = AS200SetFlowArray[0];
         // return (float &)tmp;
 
-        uint16_t tmpa[2];
-        tmpa[0] = AS200SetFlowArray[1];
-        tmpa[1] = AS200SetFlowArray[0];
-        float tmp;
-        memcpy(&tmp, tmpa, sizeof(float));
-        return tmp;
+        // uint16_t tmpa[2];
+        // tmpa[0] = AS200SetFlowArray[1];
+        // tmpa[1] = AS200SetFlowArray[0];
+        // float tmp;
+        // memcpy(&tmp, tmpa, sizeof(float));
+        // return tmp;
+
+        FloatConverter converter;
+        converter.asWords[0] = AS200SetFlowArray[1];
+        converter.asWords[1] = AS200SetFlowArray[0];
+        return converter.asFloat;
     }
     void setAS200SetFlow(float value)
     {
         // uint16_t *ptr = (uint16_t *)&value;
         // AS200SetFlowArray[0] = *(ptr + 1);
         // AS200SetFlowArray[1] = *ptr;
-        uint16_t temp[2];
-        memcpy(temp, &value, sizeof(value));
-        AS200SetFlowArray[0] = temp[1];
-        AS200SetFlowArray[1] = temp[0];
+        // uint16_t temp[2];
+        // memcpy(temp, &value, sizeof(value));
+        // AS200SetFlowArray[0] = temp[1];
+        // AS200SetFlowArray[1] = temp[0];
+        FloatConverter converter;
+        converter.asFloat = value;
+        AS200SetFlowArray[0] = converter.asWords[1];
+        AS200SetFlowArray[1] = converter.asWords[0];
     }
 
     uint16_t AFM07Reg[5];
@@ -177,12 +191,16 @@ struct ChannelStruct
         // tmp[0] = AFM07Reg[AFM07_ACC_FLOW_L];
         // tmp[1] = AFM07Reg[AFM07_ACC_FLOW_H];
         // return (float &)tmp;
-        uint16_t tmpa[2];
-        tmpa[0] = AFM07Reg[AFM07_ACC_FLOW_L];
-        tmpa[1] = AFM07Reg[AFM07_ACC_FLOW_H];
-        float tmp;
-        memcpy(&tmp, tmpa, sizeof(float));
-        return tmp;
+        // uint16_t tmpa[2];
+        // tmpa[0] = AFM07Reg[AFM07_ACC_FLOW_L];
+        // tmpa[1] = AFM07Reg[AFM07_ACC_FLOW_H];
+        // float tmp;
+        // memcpy(&tmp, tmpa, sizeof(float));
+        // return tmp;
+        FloatConverter converter;
+        converter.asWords[0] = AFM07Reg[AFM07_ACC_FLOW_L];
+        converter.asWords[1] = AFM07Reg[AFM07_ACC_FLOW_H];
+        return converter.asFloat;
     }
     byte AS200MbAdr;
     byte AFM07MbAdr;
