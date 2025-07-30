@@ -106,7 +106,7 @@ void setup()
   MasterSerial.begin(115200, SERIAL_8N1);
   MbMaster.begin(115200, SERIAL_8N1);
 
-  
+  Channel1Data.AS200MbError = MbMaster.readHoldingRegisters(Channel1Data.AS200MbAdr, AS200_FLOW_H, Channel1Data.AS200SetFlowArray, 2);
 }
 void loop()
 {

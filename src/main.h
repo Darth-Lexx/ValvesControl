@@ -168,6 +168,8 @@ struct ChannelStruct
     }
     byte AS200MbAdr;
     byte AFM07MbAdr;
+    byte AS200MbError;
+    byte AFM07MbError;
 };
 
 struct EEPROMData
