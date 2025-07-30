@@ -27,16 +27,34 @@
 #define MBSL_R_DELTA 3
 #define MBSL_R_OC_VALVE 4 // 0 - газ не подается, 1 - высокая смесь, 2 - средняя, 4 - азот
 #define MBSL_R_CHANNELS 5 // страший байт - флаги включения каналов, младший - флаги, что расход газа на выходе соответсвует заданному (+- дельта)
-#define MBSL_ERROR 6      // флаги по каналам - 1 есть ошибка //ro↓
-#define MBSL_ERROR2 7     // по 4 бита на канал. 1 бит - ошибка связи с AS200, 2 - ошибка связи с AFM07, 3 - внутреняя ошибка AFM07, 4 - не удается получить требуемый расход
-#define MBSL_R_CH1 8      // фактическое значение канала в см^3 в минуту
-#define MBSL_R_CH2 9
-#define MBSL_R_CH3 10
-#define MBSL_R_CH4 11
-#define MBSL_R_CH1_T 12 // температура канала
-#define MBSL_R_CH2_T 13
-#define MBSL_R_CH3_T 14
-#define MBSL_R_CH4_T 15
+#define MBSL_ERROR 6      // ro↓
+#define MBSL_ERROR2 7
+#define MBSL_ERROR3 8
+// 48 бит:
+// 0-3 ошибка связи AS200-1
+// 4-7 -//- AS200-2
+// 8-11 -//- AS200-3
+// 12-15 -//- AS200-4
+// 16-19 -//- AFM07-1
+// 20-23 -//- AFM07-2
+// 24-27 -//- AFM07-3
+// 28-31 -//- AFM07-4
+// 32-33 - внутренняя ошибка AFM07-1
+// 34-35 - внутренняя ошибка AFM07-2
+// 36-37 - внутренняя ошибка AFM07-3
+// 38-39 - внутренняя ошибка AFM07-4
+// 40-41 - ошибка расхода первого канала - 1 - раход = 0, 2 - лимит регулирования, 3 - на выходе больше, чем на входе.
+// 42-43 - -//- второго канала
+// 44-45 - -//- третьего канала
+// 46-47 - -//- четвёртого канала
+#define MBSL_R_CH1 9 // фактическое значение канала в см^3 в минуту
+#define MBSL_R_CH2 10
+#define MBSL_R_CH3 11
+#define MBSL_R_CH4 12
+#define MBSL_R_CH1_T 13 // температура канала
+#define MBSL_R_CH2_T 14
+#define MBSL_R_CH3_T 15
+#define MBSL_R_CH4_T 16
 
 //--//
 
@@ -121,7 +139,7 @@ ButtonT<PIN_BTN_N2> N2Button;
 ModbusRTUSlave MbSlave(SlaveSerial);
 ModbusRTUMaster MbMaster(MasterSerial, PIN_DE, PIN_RE);
 
-uint16_t SlaveRegs[16];
+uint16_t SlaveRegs[17];
 uint16_t SlaveRWRegsActual[2];
 
 struct ChannelStruct
@@ -168,8 +186,28 @@ struct ChannelStruct
     }
     byte AS200MbAdr;
     byte AFM07MbAdr;
-    byte AS200MbError;
-    byte AFM07MbError;
+    byte AS200MbError = 0;
+    byte AFM07MbError = 0;
+    byte AFM07OffSet = 0;
+
+    operator bool() const
+    {
+        return Enabled;
+    }
+
+    ChannelStruct &operator=(bool value)
+    {
+        Enabled = value;
+        return *this;
+    }
+
+    bool operator!() const
+    {
+        return !Enabled;
+    }
+
+private:
+    bool Enabled = false; // флаг включения канала
 };
 
 struct EEPROMData
@@ -185,7 +223,17 @@ ChannelStruct Channel1Data;
 ChannelStruct Channel2Data;
 ChannelStruct Channel3Data;
 ChannelStruct Channel4Data;
+ChannelStruct* Channels[] = { &Channel1Data, &Channel2Data, &Channel3Data, &Channel4Data };
 
 EEPROMData Data;
 
+enum ErrorGroups
+{
+    AS200_COMM_ERROR, 
+    AFM07_COMM_ERROR, 
+    AFM07_INT_ERROR, 
+    CHANNEL_ERROR 
+};
+void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, uint8_t error);
+uint8_t getError(const uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num);
 #endif
