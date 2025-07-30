@@ -52,40 +52,62 @@ void setup()
   // проверка пина сброса настроек
   bool reset = !digitalRead(PIN_RESET);
   // чтение данных из EEPROM
-  SlaveMbAdr = EEPROM.read(EEPROM_ADR);
-  SlaveMbSpeed = EEPROM.read(EEPROM_SPEED);
-  Delta = EEPROM.read(EEPROM_DELTA);
-  EEPROM.get(EEPROM_FLOW, Flow);
-  ChannelsEnable = EEPROM.read(EEPROM_CH_ENABLE);
+  EEPROM.get(0, Data);
 
   // проверка валидности прочитанных данных (сброс если не валидные или установлен пин сброса)
-  if (SlaveMbAdr == 0 || SlaveMbAdr > 247 || reset)
+  if (Data.ModBusAdr == 0 || Data.ModBusAdr > 247 || reset)
   {
-    SlaveMbAdr = MBSL_ADR_D;
-    EEPROM.update(EEPROM_ADR, SlaveMbAdr);
+    Data.ModBusAdr = MBSL_ADR_D;
+    EEPROM.put(0, Data);
   }
-  if ((SlaveMbSpeed != 1 && SlaveMbSpeed != 2 && SlaveMbSpeed != 4 && SlaveMbSpeed != 8 && SlaveMbSpeed != 12 && SlaveMbSpeed != 24) || reset)
+  if ((Data.ModBusSpeed != 1 && Data.ModBusSpeed != 2 && Data.ModBusSpeed != 4 && Data.ModBusSpeed != 8 && Data.ModBusSpeed != 12 && Data.ModBusSpeed != 24) || reset)
   {
-    SlaveMbSpeed = 2;
-    EEPROM.update(EEPROM_SPEED, SlaveMbSpeed);
+    Data.ModBusSpeed = 2;
+    EEPROM.put(0, Data);
   }
-  if (Delta < 30 || Delta > 100 || reset)
+  if (Data.Delta < 30 || Data.Delta > 100 || reset)
   {
-    Delta = MBSL_DELTA_D;
-    EEPROM.update(EEPROM_DELTA, Delta);
+    Data.Delta = MBSL_DELTA_D;
+    EEPROM.put(0, Data);
   }
-  if (Flow < 400 || Flow > 1000 || reset)
+  if (Data.Flow < 400 || Data.Flow > 1000 || reset)
   {
-    Flow = MBSL_FLOW_D;
-    EEPROM.put(EEPROM_FLOW, Flow);
+    Data.Flow = MBSL_FLOW_D;
+    EEPROM.put(0, Data);
   }
-  if (ChannelsEnable > 15 || reset)
+  if (Data.ChannelsEnable > 15 || reset)
   {
-    ChannelsEnable = 15;
-    EEPROM.update(EEPROM_CH_ENABLE, ChannelsEnable);
+    Data.ChannelsEnable = 15;
+    EEPROM.put(0, Data);
   }
-}
 
+  //инициализация регистров для связи с ПК
+  MbSlave.configureHoldingRegisters(SlaveRegs, array_count(SlaveRegs));
+  MbSlave.configureInputRegisters(SlaveRegs, array_count(SlaveRegs));
+
+  //инициализация порта и модбас связи с ПК
+  SlaveSerial.begin(Data.ModBusSpeed * 4800, SERIAL_8N1);
+  MbSlave.begin(Data.ModBusAdr, Data.ModBusSpeed * 4800, SERIAL_8N1);
+
+  //Инициализация связи с AS200 и AFM07
+  Channel1Data.AS200MbAdr = 1;
+  Channel2Data.AS200MbAdr = 3;
+  Channel3Data.AS200MbAdr = 5;
+  Channel4Data.AS200MbAdr = 7;
+  Channel1Data.AFM07MbAdr = 2;
+  Channel2Data.AFM07MbAdr = 4;
+  Channel3Data.AFM07MbAdr = 6;
+  Channel4Data.AFM07MbAdr = 8;
+  Channel1Data.setAS200SetFlow(Data.Flow);
+  Channel2Data.setAS200SetFlow(Data.Flow);
+  Channel3Data.setAS200SetFlow(Data.Flow);
+  Channel4Data.setAS200SetFlow(Data.Flow);
+
+  MasterSerial.begin(115200, SERIAL_8N1);
+  MbMaster.begin(115200, SERIAL_8N1);
+
+  
+}
 void loop()
 {
 }
