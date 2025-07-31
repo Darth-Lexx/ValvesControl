@@ -18,6 +18,50 @@
 
 #include <EEPROM.h>
 
+#define ANSI_COLORS  // Раскомментировать для включения цветного вывода
+
+// В секцию enum LogLevel добавляем:
+enum LogLevel {
+    LOG_INFO,
+    LOG_WARNING,
+    LOG_ERROR, 
+    LOG_DEBUG,
+    LOG_MODBUS  // Новый тип для ModBus-сообщений
+};
+
+// ========== main.cpp ==========
+// Добавляем в начало файла:
+#ifdef ANSI_COLORS
+// ANSI Color Codes
+#define ANSI_RESET   "\033[0m"
+#define ANSI_RED     "\033[31m"
+#define ANSI_GREEN   "\033[32m"
+#define ANSI_YELLOW  "\033[33m"
+#define ANSI_BLUE    "\033[34m"
+#define ANSI_MAGENTA "\033[35m"
+#define ANSI_CYAN    "\033[36m"
+#define ANSI_WHITE   "\033[37m"
+#else
+// Пустые define для отключения цветов
+#define ANSI_RESET   ""
+#define ANSI_RED     ""
+#define ANSI_GREEN   ""
+#define ANSI_YELLOW  ""
+#define ANSI_BLUE    ""
+#define ANSI_MAGENTA ""
+#define ANSI_CYAN    ""
+#define ANSI_WHITE   ""
+#endif
+
+// Прототипы функций логгирования
+void logMessage(LogLevel level, const String& message);
+void updateTimeTracker();
+String formatTime();
+
+// Глобальная переменная для времени старта системы
+extern uint32_t systemOverflows;
+extern unsigned long systemStartTime;
+
 #define array_count(a) sizeof(a) / sizeof((a)[0])
 
 //--ModBus slave registers  --//
@@ -63,20 +107,6 @@
 #define MBSL_SPEED_D 2
 #define MBSL_DELTA_D 30
 #define MBSL_FLOW_D 600
-
-// //--ModBus slave coils      --//
-// #define MBSL_C_H            0       //rw↓
-// #define MBSL_C_L            1
-// #define MBSL_C_N2           2
-// #define MBSL_C_CH1          3
-// #define MBSL_C_CH2          4
-// #define MBSL_C_CH3          5
-// #define MBSL_C_CH4          6
-// #define MBSL_C_CH1_READY    7       //ro↓
-// #define MBSL_C_CH2_READY    8
-// #define MBSL_C_CH3_READY    9
-// #define MBSL_C_CH4_READY    10
-// //--//
 
 //--ModBus AS200 registers  --//
 #define AS200_FLOW_H 0 // float ro
@@ -156,18 +186,6 @@ struct ChannelStruct
     uint16_t AS200SetFlowArray[2] = {0, 0};
     float getAS200SetFlow() const
     {
-        // uint16_t tmp[2];
-        // tmp[0] = AS200SetFlowArray[1];
-        // tmp[1] = AS200SetFlowArray[0];
-        // return (float &)tmp;
-
-        // uint16_t tmpa[2];
-        // tmpa[0] = AS200SetFlowArray[1];
-        // tmpa[1] = AS200SetFlowArray[0];
-        // float tmp;
-        // memcpy(&tmp, tmpa, sizeof(float));
-        // return tmp;
-
         FloatConverter converter;
         converter.asWords[0] = AS200SetFlowArray[1];
         converter.asWords[1] = AS200SetFlowArray[0];
@@ -175,13 +193,6 @@ struct ChannelStruct
     }
     void setAS200SetFlow(float value)
     {
-        // uint16_t *ptr = (uint16_t *)&value;
-        // AS200SetFlowArray[0] = *(ptr + 1);
-        // AS200SetFlowArray[1] = *ptr;
-        // uint16_t temp[2];
-        // memcpy(temp, &value, sizeof(value));
-        // AS200SetFlowArray[0] = temp[1];
-        // AS200SetFlowArray[1] = temp[0];
         FloatConverter converter;
         converter.asFloat = value;
         AS200SetFlowArray[0] = converter.asWords[1];
@@ -191,16 +202,6 @@ struct ChannelStruct
     uint16_t AFM07Reg[5] = { 0,0,0,0,0};
     float getAFM07Acc() const
     {
-        // uint16_t tmp[2];
-        // tmp[0] = AFM07Reg[AFM07_ACC_FLOW_L];
-        // tmp[1] = AFM07Reg[AFM07_ACC_FLOW_H];
-        // return (float &)tmp;
-        // uint16_t tmpa[2];
-        // tmpa[0] = AFM07Reg[AFM07_ACC_FLOW_L];
-        // tmpa[1] = AFM07Reg[AFM07_ACC_FLOW_H];
-        // float tmp;
-        // memcpy(&tmp, tmpa, sizeof(float));
-        // return tmp;
         FloatConverter converter;
         converter.asWords[0] = AFM07Reg[AFM07_ACC_FLOW_L];
         converter.asWords[1] = AFM07Reg[AFM07_ACC_FLOW_H];
