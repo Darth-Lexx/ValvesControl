@@ -4,12 +4,35 @@
 uint32_t systemOverflows = 0;
 unsigned long systemStartTime = 0;
 unsigned long lastMillisCheck = 0;
+Adafruit_SSD1306 display(
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    &SPI,
+    OLED_DC,
+    OLED_RESET,
+    OLED_CS);
 
 void setup()
 {
   systemStartTime = millis(); // Засекаем время старта системы
   Serial.begin(115200);
   logMessage(LOG_INFO, "System startup initiated");
+
+  // Инициализация дисплея
+  if (!display.begin(SSD1306_SWITCHCAPVCC))
+  {
+    logMessage(LOG_WARNING, "Ошибка инициализации SSD1309");
+  }
+  // Очистка буфера
+  display.clearDisplay();
+
+  // Вывод текста
+  display.setFont(NULL);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 21);
+  display.print("Initialization...");
+  display.display();
+
   // установка пинов ресета, кнопок и реле
   pinMode(PIN_RESET, INPUT_PULLUP);
   pinMode(PIN_BTN_CH1, INPUT_PULLUP);
@@ -37,12 +60,18 @@ void setup()
   digitalWrite(PIN_CTRL2_POWER, PIN_OFF);
   digitalWrite(PIN_CTRL3_POWER, PIN_OFF);
   digitalWrite(PIN_CTRL4_POWER, PIN_OFF);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_INFO, "Pins initialized");
 
   // открытие клапанов сброса давления
   digitalWrite(PIN_H_REL, PIN_ON);
   digitalWrite(PIN_L_REL, PIN_ON);
   digitalWrite(PIN_N2_REL, PIN_ON);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_INFO, "Pressure relief valves opened");
 
   delay(2000);
@@ -51,6 +80,9 @@ void setup()
   digitalWrite(PIN_H_REL, PIN_OFF);
   digitalWrite(PIN_L_REL, PIN_OFF);
   digitalWrite(PIN_N2_REL, PIN_OFF);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_INFO, "Pressure relief valves closed");
 
   // включение AS200
@@ -58,6 +90,9 @@ void setup()
   digitalWrite(PIN_CTRL2_POWER, PIN_ON);
   digitalWrite(PIN_CTRL3_POWER, PIN_ON);
   digitalWrite(PIN_CTRL4_POWER, PIN_ON);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_INFO, "AS200 controllers powered on");
 
   // проверка пина сброса настроек
@@ -67,6 +102,9 @@ void setup()
 
   // чтение данных из EEPROM
   EEPROM.get(0, Data);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_INFO, "EEPROM data read");
 
   // проверка валидности прочитанных данных (сброс если не валидные или установлен пин сброса)
@@ -112,6 +150,9 @@ void setup()
   // инициализация порта и модбас связи с ПК
   SlaveSerial.begin(Data.ModBusSpeed * 4800, SERIAL_8N1);
   MbSlave.begin(Data.ModBusAdr, Data.ModBusSpeed * 4800, SERIAL_8N1);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_MODBUS, "ModBus Slave initialized. Address: " + String(Data.ModBusAdr) +
                              ", Speed: " + String(Data.ModBusSpeed * 4800) + " baud");
 
@@ -120,6 +161,9 @@ void setup()
   AS200Master.begin(38400, SERIAL_8N1);
   MasterSerialAFM07.begin(115200, SERIAL_8N1);
   AFM07Master.begin(115200, SERIAL_8N1);
+
+  display.print(".");
+  display.display();
   logMessage(LOG_MODBUS, "AS200 and AFM07 communication ports initialized");
 
   for (byte i = 0; i < 4; i++)
@@ -158,14 +202,44 @@ void setup()
                                 ", AFM07 error: " + String(Channels[i]->AFM07MbError) +
                                 ", AFM07 status: " + String(Channels[i]->AFM07Reg[AFM07_STATUS]));
     }
+
+    display.print(".");
+    display.display();
   }
 
   // инициализация регистров для связи с ПК
   MbSlave.configureHoldingRegisters(SlaveRegs, array_count(SlaveRegs));
   MbSlave.configureInputRegisters(SlaveRegs, array_count(SlaveRegs));
+
+  display.print(".");
+  display.display();
   logMessage(LOG_MODBUS, "ModBus registers configured");
 
   logMessage(LOG_INFO, "System initialization completed");
+
+  display.clearDisplay();
+  display.setCursor(1, 0);
+  char buffer[23];
+  // Форматируем с фиксированной шириной для каждого числа
+  snprintf(buffer, sizeof(buffer), "%-3d %-6ld   %-4d %-3d",
+           Data.ModBusAdr,                // 3 знака, выравнивание по левому краю
+           (long)Data.ModBusSpeed * 4800, // 6 знаков
+           Data.Flow,                     // 4 знака
+           Data.Delta);                   // 3 знака
+  display.print(buffer);
+  display.display();
+
+  // int16_t x1, y1;
+  // uint16_t w, h;
+  // display.getTextBounds(buffer, 0, 0, &x1, &y1, &w, &h);
+  // logMessage(LOG_INFO, "Display text bounds: x1=" + String(x1) + ", y1=" + String(y1) +
+  //                              ", width=" + String(w) + ", height=" + String(h));
+  display.drawRect(0, 8, 128, 56, WHITE);
+  display.display();
+
+  delay(1000);
+  display.fillRect(0, 0, 128, 8, BLACK);
+  display.display();
 }
 void loop()
 {

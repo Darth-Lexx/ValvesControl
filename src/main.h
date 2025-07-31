@@ -17,6 +17,19 @@
 #include <ModbusRTUMaster.h>
 
 #include <EEPROM.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "font.h"
+
+// Настройки дисплея
+#define SCREEN_WIDTH  128
+#define SCREEN_HEIGHT 64
+#define OLED_MOSI  51  // Фиксированный SPI
+#define OLED_CLK   52  // Фиксированный SPI
+#define OLED_DC    8   // Любой цифровой
+#define OLED_CS    53  // Рекомендуется 53
+#define OLED_RESET 9   // Любой цифровой
 
 #define ANSI_COLORS  // Раскомментировать для включения цветного вывода
 
@@ -142,9 +155,9 @@ extern unsigned long systemStartTime;
 #define PIN_N2_VALVE 5
 #define PIN_H_REL 6
 #define PIN_L_REL 7
-#define PIN_N2_REL 8
-#define PIN_CTRL1_POWER 9
-#define PIN_CTRL2_POWER 10
+#define PIN_N2_REL 38
+#define PIN_CTRL1_POWER 39
+#define PIN_CTRL2_POWER 40
 #define PIN_CTRL3_POWER 11
 #define PIN_CTRL4_POWER 12
 
