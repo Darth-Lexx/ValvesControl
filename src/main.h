@@ -183,10 +183,11 @@ extern unsigned long systemStartTime;
 #define PIN_BTN_H 26
 #define PIN_BTN_L 27
 #define PIN_BTN_N2 28
-#define PIN_RE_AS200 52
-#define PIN_DE_AS200 53
-#define PIN_RE_AFM07 50
-#define PIN_DE_AFM07 51
+
+#define PIN_RE_AS200 44
+#define PIN_DE_AS200 45
+#define PIN_RE_AFM07 42
+#define PIN_DE_AFM07 43
 
 ButtonT<PIN_BTN_CH1> Channel1Button;
 ButtonT<PIN_BTN_CH2> Channel2Button;
