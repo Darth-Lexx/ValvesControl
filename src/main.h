@@ -31,6 +31,19 @@
 #define OLED_CS    53  // Рекомендуется 53
 #define OLED_RESET 9   // Любой цифровой
 
+#define TOP_TEXT_SP 1, 0
+#define BOTTOM_RECR_TL 0, 57
+#define CH1_TL 0, 10
+#define CH1_BR 62, 31
+#define CH3_TL 0, 33
+#define CH3_BR 62, 54
+#define CH2_TL 65, 10
+#define CH2_BR 127, 31
+#define CH4_TL 65, 33
+#define CH4_BR 127, 54
+#define CH_H    22
+#define CH_W    63
+
 #define ANSI_COLORS  // Раскомментировать для включения цветного вывода
 
 // В секцию enum LogLevel добавляем:
