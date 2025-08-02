@@ -57,6 +57,7 @@ enum LogLevel {
 void logMessage(LogLevel level, const String& message);
 void updateTimeTracker();
 String formatTime();
+void safeEEPROMWrite();
 
 // Глобальная переменная для времени старта системы
 extern uint32_t systemOverflows;
