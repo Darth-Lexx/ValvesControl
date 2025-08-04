@@ -4,13 +4,7 @@
 uint32_t systemOverflows = 0;
 unsigned long systemStartTime = 0;
 unsigned long lastMillisCheck = 0;
-Adafruit_SSD1306 display(
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT,
-    &SPI,
-    OLED_DC,
-    OLED_RESET,
-    OLED_CS);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 // Флаг подачи газа
 byte ValveOpen = 0;
@@ -449,7 +443,7 @@ void setup()
   // display.fillRect(CH2_STR2_BOX, WHITE);
   // display.fillRect(CH3_STR2_BOX, WHITE);
   // display.fillRect(CH4_STR2_BOX, WHITE);
-  display.setFont(&customFont);
+  display.setFont(&Check);
   display.print(0x20);
   display.print(0x21);
   display.display();

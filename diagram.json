@@ -2,17 +2,30 @@
   "version": 1,
   "author": "Lexx",
   "editor": "wokwi",
-  "parts": [
-    { "id": "mega", "type": "wokwi-arduino-mega", "top": 120, "left": 20 },
-    { "id": "r1", "type": "wokwi-resistor", "top": 67, "left": 118.5, "rotate": 90, "attrs": {"value": "220"} },
-    { "id": "led", "type": "wokwi-led", "left": 123, "top": 0, "attrs": { "color": "red" }}
-  ],
-  "connections": [
-    ["mega:GND.1", "led:C", "black", []],
-    ["r1:1", "led:A", "blue", []],
-    ["mega:13", "r1:2", "blue", []],
-    ["mega:0", "$serialMonitor:TX", "" ],
-    ["mega:1", "$serialMonitor:RX", "" ]
-  ],
+"parts": [
+  {
+    "type": "wokwi-arduino-mega",
+    "id": "mega",
+    "top": 0,
+    "left": 0,
+    "attrs": {}
+  },
+  {
+    "type": "wokwi-ssd1306",
+    "id": "display1",
+    "top": 0,
+    "left": 400,
+    "attrs": {
+      "width": "128",
+      "height": "64"
+    }
+  }
+],
+"connections": [
+  ["mega:20", "display1:DATA", "green", ["h0"]], 
+  ["mega:21", "display1:CLK", "green", ["h0"]],   
+  ["mega:5V", "display1:VIN", "red", ["h0"]],   
+  ["mega:GND.2", "display1:GND", "black", ["h0"]]
+],
   "serialMonitor": { "display": "always", "newline": "lf"}
 }
