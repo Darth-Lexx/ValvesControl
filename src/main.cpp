@@ -12,11 +12,11 @@ Adafruit_SSD1306 display(
     OLED_RESET,
     OLED_CS);
 
-//Флаг подачи газа
+// Флаг подачи газа
 byte ValveOpen = 0;
-//Флаг готовности каналов
+// Флаг готовности каналов
 byte ChannelReady = 0;
-//Флаг опроса каналов
+// Флаг опроса каналов
 byte NextChannel = 0;
 
 void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, uint8_t error)
@@ -155,31 +155,35 @@ void updateTimeTracker()
   lastMillisCheck = millis();
 }
 
-void safeEEPROMWrite() {
-    uint8_t bytesWritten = 0;
-    EEPROMData currentData;
-    
-    // 1. Читаем текущие данные
-    EEPROM.get(0, currentData);
-    
-    // 2. Сравниваем и записываем побайтово
-    const uint8_t* newData = (uint8_t*)&Data;
-    const uint8_t* oldData = (uint8_t*)&currentData;
-    
-    for (size_t i = 0; i < sizeof(EEPROMData); i++) {
-        if (newData[i] != oldData[i]) {
-            // 3. Записываем только изменённые байты
-            EEPROM.update(i, newData[i]);
-            bytesWritten++;
-        }
+void safeEEPROMWrite()
+{
+  uint8_t bytesWritten = 0;
+  EEPROMData currentData;
+
+  // 1. Читаем текущие данные
+  EEPROM.get(0, currentData);
+
+  // 2. Сравниваем и записываем побайтово
+  const uint8_t *newData = (uint8_t *)&Data;
+  const uint8_t *oldData = (uint8_t *)&currentData;
+
+  for (size_t i = 0; i < sizeof(EEPROMData); i++)
+  {
+    if (newData[i] != oldData[i])
+    {
+      // 3. Записываем только изменённые байты
+      EEPROM.update(i, newData[i]);
+      bytesWritten++;
     }
-    
-if (bytesWritten > 0) {
+  }
+
+  if (bytesWritten > 0)
+  {
     char buf[35];
-    snprintf(buf, sizeof(buf), "EEPROM: изменено %u из %u байт", 
+    snprintf(buf, sizeof(buf), "EEPROM: изменено %u из %u байт",
              bytesWritten, sizeof(EEPROMData));
     logMessage(LOG_INFO, buf);
-}
+  }
 }
 
 void setup()
@@ -267,7 +271,7 @@ void setup()
 
   // проверка пина сброса настроек
   bool reset = !digitalRead(PIN_RESET);
-  
+
   if (reset)
     logMessage(LOG_WARNING, "Reset pin is active, settings will be reset");
 
@@ -277,7 +281,6 @@ void setup()
   display.print(".");
   display.display();
   logMessage(LOG_INFO, "EEPROM data read");
-
 
   // проверка валидности прочитанных данных (сброс если не валидные или установлен пин сброса)
   bool settingsChanged = false;
@@ -337,8 +340,8 @@ void setup()
   }
 
   // инициализация порта и модбас связи с ПК
-  SlaveSerial.begin(Data.ModBusSpeed * 4800, SERIAL_8N1);
-  MbSlave.begin(Data.ModBusAdr, Data.ModBusSpeed * 4800, SERIAL_8N1);
+  SlaveSerial.begin(Data.ModBusSpeed * 4800, SERIAL_8N2);
+  MbSlave.begin(Data.ModBusAdr, Data.ModBusSpeed * 4800, SERIAL_8N2);
 
   display.print(".");
   display.display();
@@ -346,10 +349,10 @@ void setup()
                              ", Speed: " + String(Data.ModBusSpeed * 4800) + " baud");
 
   // Инициализация связи с AS200 и AFM07
-  MasterSerialAS200.begin(38400, SERIAL_8N1);
-  AS200Master.begin(38400, SERIAL_8N1);
-  MasterSerialAFM07.begin(115200, SERIAL_8N1);
-  AFM07Master.begin(115200, SERIAL_8N1);
+  MasterSerialAS200.begin(38400, SERIAL_8N2);
+  AS200Master.begin(38400, SERIAL_8N2);
+  MasterSerialAFM07.begin(115200, SERIAL_8N2);
+  AFM07Master.begin(115200, SERIAL_8N2);
 
   display.print(".");
   display.display();
@@ -361,15 +364,24 @@ void setup()
     Channels[i]->AFM07MbAdr = 2 + i * 2;
     Channels[i]->setAS200SetFlow(Data.Flow);
 
-    logMessage(LOG_MODBUS, "Channel " + String(i + 1) +
-                               " - AS200 address: " + String(Channels[i]->AS200MbAdr) +
-                               ", AFM07 address: " + String(Channels[i]->AFM07MbAdr) +
-                               ", Set flow: " + String(Data.Flow));
+    logMessage(LOG_MODBUS, "Channel " + String(i + 1) + " - AS200 address: " + String(Channels[i]->AS200MbAdr) + ", AFM07 address: " + String(Channels[i]->AFM07MbAdr) + ", Set flow: " + String(Data.Flow));
     // Чтение регистров
-    Channels[i]->AS200MbError = AS200Master.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H,
-                                                                 Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
-    Channels[i]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0,
-                                                                 Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
+    Channels[i]->AS200MbError = AS200Master.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H, Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
+    Channels[i]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0, Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
+
+    // две попытки повторного чтения при ошибке
+    if (Channels[i]->AS200MbError)
+    {
+      Channels[i]->AS200MbError = AS200Master.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H, Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
+      if (Channels[i]->AS200MbError)
+        Channels[i]->AS200MbError = AS200Master.readHoldingRegisters(Channels[i]->AS200MbAdr, AS200_FLOW_H, Channels[i]->AS200SetFlowArray, array_count(Channels[i]->AS200SetFlowArray));
+    }
+    if (Channels[i]->AFM07MbError)
+    {
+      Channels[i]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0, Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
+      if (Channels[i]->AFM07MbError)
+        Channels[i]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[i]->AFM07MbAdr, 0, Channels[i]->AFM07Reg, array_count(Channels[i]->AFM07Reg));
+    }
 
     // Проверка ошибок и активация канала
     if (!Channels[i]->AS200MbError && !Channels[i]->AFM07MbError && !Channels[i]->AFM07Reg[AFM07_STATUS])
@@ -390,10 +402,7 @@ void setup()
       bitClear(Data.ChannelsEnable, i);
       *Channels[i] = false;
 
-      logMessage(LOG_ERROR, "Channel " + String(i + 1) +
-                                " activation failed. AS200 error: " + String(Channels[i]->AS200MbError) +
-                                ", AFM07 error: " + String(Channels[i]->AFM07MbError) +
-                                ", AFM07 status: " + String(Channels[i]->AFM07Reg[AFM07_STATUS]));
+      logMessage(LOG_ERROR, "Channel " + String(i + 1) + " activation failed. AS200 error: " + String(Channels[i]->AS200MbError) + ", AFM07 error: " + String(Channels[i]->AFM07MbError) + ", AFM07 status: " + String(Channels[i]->AFM07Reg[AFM07_STATUS]));
     }
 
     display.print(".");
@@ -414,24 +423,35 @@ void setup()
   display.setCursor(1, 0);
   char buffer[23];
   // Форматируем с фиксированной шириной для каждого числа
-  snprintf(buffer, sizeof(buffer), "%-3d %-6ld   %-4d %-3d",
-           Data.ModBusAdr,                // 3 знака, выравнивание по левому краю
-           (long)Data.ModBusSpeed * 4800, // 6 знаков
-           Data.Flow,                     // 4 знака
-           Data.Delta);                   // 3 знака
+  snprintf(buffer, sizeof(buffer), "%-3d %-6ld   %-4d %-3d", Data.ModBusAdr, (long)Data.ModBusSpeed * 4800, Data.Flow, Data.Delta);
   display.print(buffer);
-  display.display();
+  display.drawLine(0, 8, 128, 8, WHITE);
+  display.drawLine(0, 56, 128, 56, WHITE);
+  display.setCursor(CH1_TL);
+  display.print("Channel 1:");
+  display.setCursor(CH2_TL);
+  display.print("Channel 2:");
+  display.setCursor(CH3_TL);
+  display.print("Channel 3:");
+  display.setCursor(CH4_TL);
+  display.print("Channel 4:");
 
-  // int16_t x1, y1;
-  // uint16_t w, h;
-  // display.getTextBounds(buffer, 0, 0, &x1, &y1, &w, &h);
-  // logMessage(LOG_INFO, "Display text bounds: x1=" + String(x1) + ", y1=" + String(y1) +
-  //                              ", width=" + String(w) + ", height=" + String(h));
-  display.drawRect(0, 8, 128, 56, WHITE);
-  display.display();
+  display.setCursor(CH1_STR2);
+  display.print("1200");
+  display.setCursor(CH2_STR2);
+  display.print("1200");
+  display.setCursor(CH3_STR2);
+  display.print("1200");
+  display.setCursor(CH4_STR2);
+  display.print("1200");
 
-  delay(1000);
-  display.fillRect(0, 0, 128, 8, BLACK);
+  // display.fillRect(CH1_STR2_BOX, WHITE);
+  // display.fillRect(CH2_STR2_BOX, WHITE);
+  // display.fillRect(CH3_STR2_BOX, WHITE);
+  // display.fillRect(CH4_STR2_BOX, WHITE);
+  display.setFont(&customFont);
+  display.print(0x20);
+  display.print(0x21);
   display.display();
 }
 
@@ -441,27 +461,27 @@ void loop()
   {
     if (SlaveRegs[MBSL_R_ADR] != Data.ModBusAdr)
     {
-      //TODO
+      // TODO
     }
 
     if (SlaveRegs[MBSL_R_SPEED] != Data.ModBusSpeed)
     {
-      //TODO
+      // TODO
     }
 
     if (SlaveRegs[MBSL_R_FLOW] != Data.Flow)
     {
-      //TODO
+      // TODO
     }
 
     if (SlaveRegs[MBSL_R_DELTA] != Data.Delta)
     {
-      //TODO
+      // TODO
     }
 
     if ((SlaveRegs[MBSL_R_CHANNELS] >> 8) != Data.ChannelsEnable)
     {
-      //TODO
+      // TODO
     }
   }
 }

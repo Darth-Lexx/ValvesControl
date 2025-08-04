@@ -31,6 +31,30 @@
 #define OLED_CS    53  // Рекомендуется 53
 #define OLED_RESET 9   // Любой цифровой
 
+#define TOP_TEXT_SP 1, 0
+#define BOTTOM_RECR_TL 0, 57
+#define CH1_TL 0, 10
+#define CH1_BR 62, 31
+#define CH3_TL 0, 33
+#define CH3_BR 62, 54
+#define CH2_TL 65, 10
+#define CH2_BR 127, 31
+#define CH4_TL 65, 33
+#define CH4_BR 127, 54
+
+#define CH1_STR2 0, 21
+#define CH2_STR2 65, 21
+#define CH3_STR2 0, 44
+#define CH4_STR2 65, 44
+
+#define CH1_STR2_BOX 26, 20, 31, 9
+#define CH2_STR2_BOX 91, 20, 31, 9
+#define CH3_STR2_BOX 26, 43, 31, 9
+#define CH4_STR2_BOX 91, 43, 31, 9
+
+#define CH_H    22
+#define CH_W    63
+
 #define ANSI_COLORS  // Раскомментировать для включения цветного вывода
 
 // В секцию enum LogLevel добавляем:
@@ -170,10 +194,11 @@ extern unsigned long systemStartTime;
 #define PIN_BTN_H 26
 #define PIN_BTN_L 27
 #define PIN_BTN_N2 28
-#define PIN_RE_AS200 52
-#define PIN_DE_AS200 53
-#define PIN_RE_AFM07 50
-#define PIN_DE_AFM07 51
+
+#define PIN_RE_AS200 44
+#define PIN_DE_AS200 45
+#define PIN_RE_AFM07 42
+#define PIN_DE_AFM07 43
 
 ButtonT<PIN_BTN_CH1> Channel1Button;
 ButtonT<PIN_BTN_CH2> Channel2Button;
@@ -185,7 +210,7 @@ ButtonT<PIN_BTN_N2> N2Button;
 
 ModbusRTUSlave MbSlave(SlaveSerial);
 ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_RE_AS200, PIN_DE_AS200);
-ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_RE_AFM07, PIN_DE_AFM07);
+ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_DE_AFM07);
 
 uint16_t SlaveRegs[17];
 uint16_t SlaveRWRegsActual[2];
