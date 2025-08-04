@@ -41,6 +41,17 @@
 #define CH2_BR 127, 31
 #define CH4_TL 65, 33
 #define CH4_BR 127, 54
+
+#define CH1_STR2 0, 21
+#define CH2_STR2 65, 21
+#define CH3_STR2 0, 44
+#define CH4_STR2 65, 44
+
+#define CH1_STR2_BOX 26, 20, 31, 9
+#define CH2_STR2_BOX 91, 20, 31, 9
+#define CH3_STR2_BOX 26, 43, 31, 9
+#define CH4_STR2_BOX 91, 43, 31, 9
+
 #define CH_H    22
 #define CH_W    63
 
@@ -199,7 +210,7 @@ ButtonT<PIN_BTN_N2> N2Button;
 
 ModbusRTUSlave MbSlave(SlaveSerial);
 ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_RE_AS200, PIN_DE_AS200);
-ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_RE_AFM07, PIN_DE_AFM07);
+ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_DE_AFM07);
 
 uint16_t SlaveRegs[17];
 uint16_t SlaveRWRegsActual[2];
