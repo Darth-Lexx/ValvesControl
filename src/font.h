@@ -11,8 +11,8 @@ const uint8_t CheckBitmaps[] PROGMEM = {
 };
 
 const GFXglyph CheckGlyphs[] PROGMEM = {
-/* '0' 0x30 */ {     0,   18,  11,   8,   0,  -11 },
-/* '1' 0x31 */ {    25,   18,  11,   8,   0,  -11 },
+/* '0' 0x30 */ {     0,   18,  11,   8,   0,  -9 },
+/* '1' 0x31 */ {    25,   18,  11,   8,   0,  -9 },
 };
 
 const GFXfont Check PROGMEM = {

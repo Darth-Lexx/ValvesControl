@@ -421,6 +421,8 @@ void setup()
   display.print(buffer);
   display.drawLine(0, 8, 128, 8, WHITE);
   display.drawLine(0, 56, 128, 56, WHITE);
+  display.drawLine(0, 31, 128, 31, WHITE);
+  display.drawLine(62, 8, 62, 56, WHITE);
   display.setCursor(CH1_TL);
   display.print("Channel 1:");
   display.setCursor(CH2_TL);
@@ -444,8 +446,15 @@ void setup()
   // display.fillRect(CH3_STR2_BOX, WHITE);
   // display.fillRect(CH4_STR2_BOX, WHITE);
   display.setFont(&Check);
-  display.print(0x20);
-  display.print(0x21);
+  display.print("0");
+  display.print("1");
+  display.display();
+
+  delay(1000);
+  display.fillRect(CH1_STR2_BOX, BLACK);
+  display.fillRect(CH2_STR2_BOX, BLACK);
+  display.fillRect(CH3_STR2_BOX, BLACK);
+  display.fillRect(CH4_STR2_BOX, BLACK);
   display.display();
 }
 
