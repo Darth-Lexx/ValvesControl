@@ -261,5 +261,6 @@ enum ErrorGroups
 };
 
 void SlavePoll();
+void ChannelSurvey();
 
 #endif

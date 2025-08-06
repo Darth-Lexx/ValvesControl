@@ -19,8 +19,8 @@ uint16_t SlaveRWRegsActual[2] = {0};
 byte ValveOpen = 0;
 byte CurrentChannel = 0;
 
-//флаги дисплея
-//флаг перерисовки верхней строки
+// флаги дисплея
+// флаг перерисовки верхней строки
 bool TopStringUpdate = false;
 
 ChannelStruct Channel1Data;
@@ -118,13 +118,18 @@ void loop()
   // обработка запроса по модбас от ПК
   SlavePoll();
 
+  ChannelSurvey();
+}
+
+void ChannelSurvey()
+{
   if (Channels[CurrentChannel] || !Channels[CurrentChannel]->IsFlowSet)
   {
-    //ОПРОС КАНАЛА
+    // ОПРОС КАНАЛА
   }
   CurrentChannel++;
-  if (CurrentChannel > 3) CurrentChannel = 0;
-
+  if (CurrentChannel > 3)
+    CurrentChannel = 0;
 }
 
 void SlavePoll()
@@ -199,7 +204,8 @@ void SlavePoll()
       {
         for (size_t i = 0; i < 4; i++)
         {
-          if (!Channels[i]) continue;
+          if (!Channels[i])
+            continue;
           Channels[i]->setAS200SetFlow(0);
           Channels[i]->IsFlowSet = false;
         }
@@ -214,7 +220,8 @@ void SlavePoll()
 
       for (size_t i = 0; i < 4; i++)
       {
-        if (!bitRead(xorD, i)) continue;
+        if (!bitRead(xorD, i))
+          continue;
 
         if (bitRead(newD, i))
         {
