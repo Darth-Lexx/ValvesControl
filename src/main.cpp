@@ -19,6 +19,10 @@ uint16_t SlaveRWRegsActual[2] = {0};
 byte ValveOpen = 0;
 byte CurrentChannel = 0;
 
+//флаги дисплея
+//флаг перерисовки верхней строки
+bool TopStringUpdate = false;
+
 ChannelStruct Channel1Data;
 ChannelStruct Channel2Data;
 ChannelStruct Channel3Data;
@@ -135,6 +139,7 @@ void SlavePoll()
     if (SlaveRegs[MBSL_R_ADR] != Data.ModBusAdr && SlaveRegs[MBSL_R_ADR] != 0 && SlaveRegs[MBSL_R_ADR] < 248)
     {
       mbChanged = true;
+      TopStringUpdate = true;
       Data.ModBusAdr = (byte)SlaveRegs[MBSL_R_ADR];
       logMessage(LOG_INFO, "Получен новый адрес ModBus");
     }
@@ -142,18 +147,21 @@ void SlavePoll()
     if (SlaveRegs[MBSL_R_SPEED] != Data.ModBusSpeed && (SlaveRegs[MBSL_R_SPEED] != 1 && SlaveRegs[MBSL_R_SPEED] != 2 && SlaveRegs[MBSL_R_SPEED] != 4 && SlaveRegs[MBSL_R_SPEED] != 8 && SlaveRegs[MBSL_R_SPEED] != 12 && SlaveRegs[MBSL_R_SPEED] != 24))
     {
       mbChanged = true;
+      TopStringUpdate = true;
       Data.ModBusSpeed = (byte)SlaveRegs[MBSL_R_SPEED];
       logMessage(LOG_INFO, "Получена новая скорость ModBus");
     }
 
     if (SlaveRegs[MBSL_R_FLOW] != Data.Flow && SlaveRegs[MBSL_R_FLOW] > 399 && SlaveRegs[MBSL_R_FLOW] < 1001)
     {
+      TopStringUpdate = true;
       flowChanged = true;
       Data.Flow = SlaveRegs[MBSL_R_FLOW];
     }
 
     if (SlaveRegs[MBSL_R_DELTA] != Data.Delta && SlaveRegs[MBSL_R_DELTA] < 101 && SlaveRegs[MBSL_R_DELTA] > 29)
     {
+      TopStringUpdate = true;
       flowChanged = true;
       Data.Delta = (byte)SlaveRegs[MBSL_R_DELTA];
     }

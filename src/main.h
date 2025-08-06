@@ -260,4 +260,6 @@ enum ErrorGroups
     CHANNEL_ERROR
 };
 
+void SlavePoll();
+
 #endif
