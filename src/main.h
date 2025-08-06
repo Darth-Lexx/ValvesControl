@@ -1,5 +1,6 @@
-#ifndef ValvesControl_H
-#define ValvesControl_H
+#pragma once
+#ifndef ValvesControl_MAIN_H
+#define ValvesControl_MAIN_H
 
 #include <Arduino.h>
 
@@ -16,20 +17,19 @@
 #include <ModbusRTUSlave.h>
 #include <ModbusRTUMaster.h>
 
-#include <EEPROM.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "font.h"
 
 // Настройки дисплея
-#define SCREEN_WIDTH  128
+#define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define OLED_MOSI  51  // Фиксированный SPI
-#define OLED_CLK   52  // Фиксированный SPI
-#define OLED_DC    8   // Любой цифровой
-#define OLED_CS    53  // Рекомендуется 53
-#define OLED_RESET 9   // Любой цифровой
+#define OLED_MOSI 51 // Фиксированный SPI
+#define OLED_CLK 52  // Фиксированный SPI
+#define OLED_DC 8    // Любой цифровой
+#define OLED_CS 53   // Рекомендуется 53
+#define OLED_RESET 9 // Любой цифровой
 
 #define TOP_TEXT_SP 1, 0
 #define BOTTOM_RECR_TL 0, 57
@@ -47,58 +47,26 @@
 #define CH3_STR2 0, 44
 #define CH4_STR2 65, 44
 
-#define CH1_STR2_BOX 26, 20, 31, 9
-#define CH2_STR2_BOX 91, 20, 31, 9
-#define CH3_STR2_BOX 26, 43, 31, 9
-#define CH4_STR2_BOX 91, 43, 31, 9
+#define CH1_STR2_CHECK 34, 27
+#define CH2_STR2_CHECK 99, 27
+#define CH3_STR2_CHECK 34, 52
+#define CH4_STR2_CHECK 99, 52
 
-#define CH_H    22
-#define CH_W    63
+#define CH1_STR2_STR2_CLEAR 0, 18, 31, 11
+#define CH2_STR2_STR2_CLEAR 65, 18, 31, 11
+#define CH3_STR2_STR2_CLEAR 0, 43, 31, 11
+#define CH4_STR2_STR2_CLEAR 65, 43, 31, 11
 
-#define ANSI_COLORS  // Раскомментировать для включения цветного вывода
+#define CH1_STR2_CHECK_CLEAR 24, 18, 31, 11
+#define CH2_STR2_CHECK_CLEAR 89, 18, 31, 11
+#define CH3_STR2_CHECK_CLEAR 24, 43, 31, 11
+#define CH4_STR2_CHECK_CLEAR 89, 43, 31, 11
 
-// В секцию enum LogLevel добавляем:
-enum LogLevel {
-    LOG_INFO,
-    LOG_WARNING,
-    LOG_ERROR, 
-    LOG_DEBUG,
-    LOG_MODBUS  // Новый тип для ModBus-сообщений
-};
+#define CH_H 22
+#define CH_W 63
 
-// ========== main.cpp ==========
-// Добавляем в начало файла:
-#ifdef ANSI_COLORS
-// ANSI Color Codes
-#define ANSI_RESET   "\033[0m"
-#define ANSI_RED     "\033[31m"
-#define ANSI_GREEN   "\033[32m"
-#define ANSI_YELLOW  "\033[33m"
-#define ANSI_BLUE    "\033[34m"
-#define ANSI_MAGENTA "\033[35m"
-#define ANSI_CYAN    "\033[36m"
-#define ANSI_WHITE   "\033[37m"
-#else
-// Пустые define для отключения цветов
-#define ANSI_RESET   ""
-#define ANSI_RED     ""
-#define ANSI_GREEN   ""
-#define ANSI_YELLOW  ""
-#define ANSI_BLUE    ""
-#define ANSI_MAGENTA ""
-#define ANSI_CYAN    ""
-#define ANSI_WHITE   ""
-#endif
-
-// Прототипы функций логгирования
-void logMessage(LogLevel level, const String& message);
-void updateTimeTracker();
-String formatTime();
-void safeEEPROMWrite();
-
-// Глобальная переменная для времени старта системы
-extern uint32_t systemOverflows;
-extern unsigned long systemStartTime;
+// дисплей
+extern Adafruit_SSD1306 display;
 
 #define array_count(a) sizeof(a) / sizeof((a)[0])
 
@@ -200,22 +168,15 @@ extern unsigned long systemStartTime;
 #define PIN_RE_AFM07 42
 #define PIN_DE_AFM07 43
 
-ButtonT<PIN_BTN_CH1> Channel1Button;
-ButtonT<PIN_BTN_CH2> Channel2Button;
-ButtonT<PIN_BTN_CH3> Channel3Button;
-ButtonT<PIN_BTN_CH4> Channel4Button;
-ButtonT<PIN_BTN_H> HighButton;
-ButtonT<PIN_BTN_L> LowButton;
-ButtonT<PIN_BTN_N2> N2Button;
+extern ModbusRTUSlave MbSlave;
+extern ModbusRTUMaster AS200Master;
+extern ModbusRTUMaster AFM07Master;
 
-ModbusRTUSlave MbSlave(SlaveSerial);
-ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_RE_AS200, PIN_DE_AS200);
-ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_DE_AFM07);
+extern uint16_t SlaveRegs[17];
+extern uint16_t SlaveRWRegsActual[2];
 
-uint16_t SlaveRegs[17];
-uint16_t SlaveRWRegsActual[2];
-
-union FloatConverter {
+union FloatConverter
+{
     float asFloat;
     uint16_t asWords[2];
 };
@@ -238,7 +199,7 @@ struct ChannelStruct
         AS200SetFlowArray[1] = converter.asWords[0];
     }
 
-    uint16_t AFM07Reg[5] = { 0,0,0,0,0};
+    uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
     float getAFM07Acc() const
     {
         FloatConverter converter;
@@ -281,22 +242,20 @@ struct EEPROMData
     uint16_t Flow = MBSL_FLOW_D;
 };
 
-ChannelStruct Channel1Data;
-ChannelStruct Channel2Data;
-ChannelStruct Channel3Data;
-ChannelStruct Channel4Data;
-ChannelStruct* Channels[] = { &Channel1Data, &Channel2Data, &Channel3Data, &Channel4Data };
+extern ChannelStruct Channel1Data;
+extern ChannelStruct Channel2Data;
+extern ChannelStruct Channel3Data;
+extern ChannelStruct Channel4Data;
+extern ChannelStruct *Channels[4];
 
-EEPROMData Data;
+extern EEPROMData Data;
 
 enum ErrorGroups
 {
-    AS200_COMM_ERROR, 
-    AFM07_COMM_ERROR, 
-    AFM07_INT_ERROR, 
-    CHANNEL_ERROR 
+    AS200_COMM_ERROR,
+    AFM07_COMM_ERROR,
+    AFM07_INT_ERROR,
+    CHANNEL_ERROR
 };
-void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, uint8_t error);
-uint8_t getError(const uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num);
 
 #endif
