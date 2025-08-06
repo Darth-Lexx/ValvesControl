@@ -17,10 +17,7 @@ uint16_t SlaveRWRegsActual[2] = {0};
 
 // Флаг подачи газа
 byte ValveOpen = 0;
-// Флаг готовности каналов
-byte ChannelReady = 0;
-// Флаг опроса каналов
-byte NextChannel = 0;
+byte CurrentChannel = 0;
 
 ChannelStruct Channel1Data;
 ChannelStruct Channel2Data;
@@ -114,31 +111,137 @@ void setup()
 
 void loop()
 {
+  // обработка запроса по модбас от ПК
+  SlavePoll();
+
+  if (Channels[CurrentChannel] || !Channels[CurrentChannel]->IsFlowSet)
+  {
+    //ОПРОС КАНАЛА
+  }
+  CurrentChannel++;
+  if (CurrentChannel > 3) CurrentChannel = 0;
+
+}
+
+void SlavePoll()
+{
   if (MbSlave.poll())
   {
-    if (SlaveRegs[MBSL_R_ADR] != Data.ModBusAdr)
+    bool mbChanged = false;
+    bool flowChanged = false;
+    bool channelsChanged = false;
+    bool valveChanged = false;
+
+    if (SlaveRegs[MBSL_R_ADR] != Data.ModBusAdr && SlaveRegs[MBSL_R_ADR] != 0 && SlaveRegs[MBSL_R_ADR] < 248)
     {
-      // TODO
+      mbChanged = true;
+      Data.ModBusAdr = (byte)SlaveRegs[MBSL_R_ADR];
+      logMessage(LOG_INFO, "Получен новый адрес ModBus");
     }
 
-    if (SlaveRegs[MBSL_R_SPEED] != Data.ModBusSpeed)
+    if (SlaveRegs[MBSL_R_SPEED] != Data.ModBusSpeed && (SlaveRegs[MBSL_R_SPEED] != 1 && SlaveRegs[MBSL_R_SPEED] != 2 && SlaveRegs[MBSL_R_SPEED] != 4 && SlaveRegs[MBSL_R_SPEED] != 8 && SlaveRegs[MBSL_R_SPEED] != 12 && SlaveRegs[MBSL_R_SPEED] != 24))
     {
-      // TODO
+      mbChanged = true;
+      Data.ModBusSpeed = (byte)SlaveRegs[MBSL_R_SPEED];
+      logMessage(LOG_INFO, "Получена новая скорость ModBus");
     }
 
-    if (SlaveRegs[MBSL_R_FLOW] != Data.Flow)
+    if (SlaveRegs[MBSL_R_FLOW] != Data.Flow && SlaveRegs[MBSL_R_FLOW] > 399 && SlaveRegs[MBSL_R_FLOW] < 1001)
     {
-      // TODO
+      flowChanged = true;
+      Data.Flow = SlaveRegs[MBSL_R_FLOW];
     }
 
-    if (SlaveRegs[MBSL_R_DELTA] != Data.Delta)
+    if (SlaveRegs[MBSL_R_DELTA] != Data.Delta && SlaveRegs[MBSL_R_DELTA] < 101 && SlaveRegs[MBSL_R_DELTA] > 29)
     {
-      // TODO
+      flowChanged = true;
+      Data.Delta = (byte)SlaveRegs[MBSL_R_DELTA];
     }
 
-    if ((SlaveRegs[MBSL_R_CHANNELS] >> 8) != Data.ChannelsEnable)
+    if (SlaveRegs[MBSL_R_OC_VALVE] != ValveOpen && SlaveRegs[MBSL_R_OC_VALVE] < 5)
     {
-      // TODO
+      valveChanged = true;
+      ValveOpen = (byte)SlaveRegs[MBSL_R_OC_VALVE];
+      switch (ValveOpen)
+      {
+      case 1:
+        digitalWrite(PIN_L_VALVE, PIN_OFF);
+        digitalWrite(PIN_N2_VALVE, PIN_OFF);
+        digitalWrite(PIN_H_VALVE, PIN_ON);
+        break;
+      case 2:
+        digitalWrite(PIN_H_VALVE, PIN_OFF);
+        digitalWrite(PIN_N2_VALVE, PIN_OFF);
+        digitalWrite(PIN_L_VALVE, PIN_ON);
+        break;
+      case 4:
+        digitalWrite(PIN_L_VALVE, PIN_OFF);
+        digitalWrite(PIN_H_VALVE, PIN_OFF);
+        digitalWrite(PIN_N2_VALVE, PIN_ON);
+        break;
+
+      default:
+        digitalWrite(PIN_L_VALVE, PIN_OFF);
+        digitalWrite(PIN_H_VALVE, PIN_OFF);
+        digitalWrite(PIN_N2_VALVE, PIN_OFF);
+        ValveOpen = 0;
+        break;
+      }
+      if (!ValveOpen)
+      {
+        for (size_t i = 0; i < 4; i++)
+        {
+          if (!Channels[i]) continue;
+          Channels[i]->setAS200SetFlow(0);
+          Channels[i]->IsFlowSet = false;
+        }
+      }
     }
+
+    if ((SlaveRegs[MBSL_R_CHANNELS] >> 8) != Data.ChannelsEnable && (SlaveRegs[MBSL_R_CHANNELS] >> 8) < 16)
+    {
+      channelsChanged = true;
+      byte newD = (byte)(SlaveRegs[MBSL_R_CHANNELS] >> 8);
+      byte xorD = Data.ChannelsEnable ^ newD;
+
+      for (size_t i = 0; i < 4; i++)
+      {
+        if (!bitRead(xorD, i)) continue;
+
+        if (bitRead(newD, i))
+        {
+          *Channels[i] = true;
+          Channels[i]->FlowStabilized = false;
+          Channels[i]->setAS200SetFlow(Data.Flow);
+          Channels[i]->IsFlowSet = false;
+        }
+        else
+        {
+          *Channels[i] = false;
+          Channels[i]->setAS200SetFlow(0);
+          Channels[i]->IsFlowSet = false;
+          Channels[i]->FlowStabilized = false;
+        }
+      }
+    }
+
+    if (mbChanged)
+    {
+      SlaveSerial.end();
+      SlaveSerial.begin(4800 * Data.ModBusSpeed, SERIAL_8N2);
+      MbSlave.begin(Data.ModBusAdr, 4800 * Data.ModBusSpeed, SERIAL_8N2);
+      MbSlave.poll();
+      logMessage(LOG_MODBUS, "Настройки ModBus изменены");
+    }
+    if (flowChanged || (ValveOpen && valveChanged))
+    {
+      for (size_t i = 0; i < 4; i++)
+      {
+        if (Channels[i])
+          Channels[i]->FlowStabilized = false;
+      }
+    }
+    if (flowChanged || channelsChanged || mbChanged)
+      safeEEPROMWrite();
   }
 }

@@ -89,8 +89,7 @@ void safeEEPROMWrite()
     if (bytesWritten > 0)
     {
         char buf[43];
-        snprintf(buf, sizeof(buf), "EEPROM: изменено %u из %u байт",
-                 bytesWritten, sizeof(EEPROMData));
+        snprintf(buf, sizeof(buf), "EEPROM: изменено %u из %u байт", bytesWritten, sizeof(EEPROMData));
         logMessage(LOG_INFO, buf);
     }
 }

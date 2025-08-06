@@ -208,10 +208,12 @@ struct ChannelStruct
         return converter.asFloat;
     }
     byte AS200MbAdr = 1;
-    byte AFM07MbAdr = 1;
+    byte AFM07MbAdr = 2;
     byte AS200MbError = 0;
     byte AFM07MbError = 0;
     byte AFM07OffSet = 0;
+    bool FlowStabilized = false;
+    bool IsFlowSet = false;
 
     operator bool() const
     {
