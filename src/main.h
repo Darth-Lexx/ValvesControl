@@ -13,6 +13,7 @@
 #define EB_HOLD_TIME 300  // таймаут удержания (кнопка)
 #define EB_STEP_TIME 500
 #include <EncButton.h>
+#include <GTimer.h>
 
 #include <ModbusRTUSlave.h>
 #include <ModbusRTUMaster.h>
@@ -67,6 +68,7 @@
 
 // дисплей
 extern Adafruit_SSD1306 display;
+extern byte ValveOpen;
 
 #define array_count(a) sizeof(a) / sizeof((a)[0])
 
@@ -146,9 +148,7 @@ extern Adafruit_SSD1306 display;
 #define PIN_H_VALVE 3
 #define PIN_L_VALVE 4
 #define PIN_N2_VALVE 5
-#define PIN_H_REL 6
-#define PIN_L_REL 7
-#define PIN_N2_REL 38
+#define PIN_REL_VALVE 6
 #define PIN_CTRL1_POWER 39
 #define PIN_CTRL2_POWER 40
 #define PIN_CTRL3_POWER 11
@@ -262,5 +262,9 @@ enum ErrorGroups
 
 void SlavePoll();
 void ChannelSurvey();
+void ValveSetOff();
+void ValveSetH();
+void ValveSetL();
+void ValveSetN2();
 
 #endif

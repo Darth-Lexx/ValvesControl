@@ -1,6 +1,14 @@
 #include "common.h"
 #include "logs.h"
 
+unsigned long progressBarTime = 0;
+unsigned long blinkTime = 0;
+float hTime = (60.0f * TIME_TO_WARNING_H * 1000) / SCREEN_WIDTH;
+float lTime = (60.0f * TIME_TO_WARNING_L * 1000) / SCREEN_WIDTH;
+float n2Time = (60.0f * TIME_TO_WARNING_N2 * 1000) / SCREEN_WIDTH;
+bool stop = false;
+bool stopOn = false;
+
 void setError(uint16_t (&data)[17], ErrorGroups errorType, uint8_t device_num, uint8_t error)
 {
     // Проверка входных данных
@@ -301,4 +309,58 @@ void displayDrawNormal()
     display.setCursor(CH4_STR2);
     display.print("0");
     display.display();
+}
+
+void displayProgressBar()
+{
+    if (!ValveOpen)
+        return;
+    unsigned long t = millis() - progressBarTime;
+    float k;
+
+    if (ValveOpen == 1)
+        k = t / hTime;
+    if (ValveOpen == 2)
+        k = t / lTime;
+    if (ValveOpen == 4)
+        k = t / n2Time;
+
+    if ((byte)k > 128)
+    {
+        blinkTime = t;
+        stop = true;
+    }
+
+    if (stop)
+    {
+        if (t > TIME_TO_STOP * 60 * 1000)
+        {
+            display.fillRect(BOTTOM_RECR_TL, 128, 7, BLACK);
+            display.display();
+            stop = false;
+            stopOn = false;
+            ValveSetOff();
+            return;
+        }
+
+        if (t - blinkTime < BLINK_PERIOD)
+            return;
+
+        blinkTime = t;
+        display.fillRect(BOTTOM_RECR_TL, 128, 7, stopOn ? BLACK : WHITE);
+        stopOn = !stopOn;
+        display.display();
+        return;
+    }
+
+    display.fillRect(BOTTOM_RECR_TL, (byte)k, 7, WHITE);
+    display.display();
+}
+
+void clearProgressBar()
+{
+    display.fillRect(BOTTOM_RECR_TL, 128, 7, BLACK);
+    display.display();
+    stop = false;
+    stopOn = false;
 }

@@ -31,6 +31,8 @@ ChannelStruct *Channels[4] = {&Channel1Data, &Channel2Data, &Channel3Data, &Chan
 
 EEPROMData Data;
 
+uTimer16<millis> relTimer;
+
 void setup()
 {
   (void)EEPROM;
@@ -119,6 +121,12 @@ void loop()
   SlavePoll();
 
   ChannelSurvey();
+
+  if (relTimer.timeout(1000))
+  {
+    digitalWrite(PIN_REL_VALVE, PIN_OFF);
+    relTimer.stop();
+  }
 }
 
 void ChannelSurvey()
@@ -130,6 +138,29 @@ void ChannelSurvey()
   CurrentChannel++;
   if (CurrentChannel > 3)
     CurrentChannel = 0;
+}
+
+void ValveSetOff()
+{
+  digitalWrite(PIN_L_VALVE, PIN_OFF);
+  digitalWrite(PIN_H_VALVE, PIN_OFF);
+  digitalWrite(PIN_N2_VALVE, PIN_OFF);
+  digitalWrite(PIN_REL_VALVE, PIN_ON);
+  relTimer.start();
+  ValveOpen = 0;
+  clearProgressBar();
+}
+
+void ValveSetH()
+{
+}
+
+void ValveSetL()
+{
+}
+
+void ValveSetN2()
+{
 }
 
 void SlavePoll()
