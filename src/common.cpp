@@ -116,9 +116,8 @@ void pinInit()
     pinMode(PIN_H_VALVE, OUTPUT);
     pinMode(PIN_L_VALVE, OUTPUT);
     pinMode(PIN_N2_VALVE, OUTPUT);
-    pinMode(PIN_H_REL, OUTPUT);
-    pinMode(PIN_L_REL, OUTPUT);
-    pinMode(PIN_N2_REL, OUTPUT);
+    pinMode(PIN_REL_VALVE, OUTPUT);
+
     pinMode(PIN_CTRL1_POWER, OUTPUT);
     pinMode(PIN_CTRL2_POWER, OUTPUT);
     pinMode(PIN_CTRL3_POWER, OUTPUT);
@@ -333,7 +332,7 @@ void displayProgressBar()
 
     if (stop)
     {
-        if (t > TIME_TO_STOP * 60 * 1000)
+        if (t > TIME_TO_STOP * 60.0f * 1000)
         {
             display.fillRect(BOTTOM_RECR_TL, 128, 7, BLACK);
             display.display();

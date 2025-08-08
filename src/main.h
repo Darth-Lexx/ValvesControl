@@ -144,7 +144,8 @@ extern byte ValveOpen;
 #define PIN_ON 1
 #define PIN_OFF 0
 
-#define PIN_RESET 2
+#define PIN_ISR 2
+#define PIN_RESET 29
 #define PIN_H_VALVE 3
 #define PIN_L_VALVE 4
 #define PIN_N2_VALVE 5
@@ -184,14 +185,14 @@ union FloatConverter
 struct ChannelStruct
 {
     uint16_t AS200SetFlowArray[2] = {0, 0};
-    float getAS200SetFlow() const
+    float getAS200SetFlow() volatile const
     {
         FloatConverter converter;
         converter.asWords[0] = AS200SetFlowArray[1];
         converter.asWords[1] = AS200SetFlowArray[0];
         return converter.asFloat;
     }
-    void setAS200SetFlow(float value)
+    void setAS200SetFlow(float value) volatile
     {
         FloatConverter converter;
         converter.asFloat = value;
@@ -200,7 +201,7 @@ struct ChannelStruct
     }
 
     uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
-    float getAFM07Acc() const
+    float getAFM07Acc() volatile const
     {
         FloatConverter converter;
         converter.asWords[0] = AFM07Reg[AFM07_ACC_FLOW_L];
@@ -220,7 +221,7 @@ struct ChannelStruct
         return Enabled;
     }
 
-    ChannelStruct &operator=(bool value)
+    ChannelStruct &operator=(bool value) 
     {
         Enabled = value;
         return *this;

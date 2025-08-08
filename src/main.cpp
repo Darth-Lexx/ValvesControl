@@ -23,10 +23,10 @@ byte CurrentChannel = 0;
 // флаг перерисовки верхней строки
 bool TopStringUpdate = false;
 
-ChannelStruct Channel1Data;
-ChannelStruct Channel2Data;
-ChannelStruct Channel3Data;
-ChannelStruct Channel4Data;
+volatile ChannelStruct Channel1Data;
+volatile ChannelStruct Channel2Data;
+volatile ChannelStruct Channel3Data;
+volatile ChannelStruct Channel4Data;
 ChannelStruct *Channels[4] = {&Channel1Data, &Channel2Data, &Channel3Data, &Channel4Data};
 
 EEPROMData Data;
@@ -62,10 +62,8 @@ void setup()
   display.display();
   logMessage(LOG_INFO, "Pins initialized");
 
-  // открытие клапанов сброса давления
-  digitalWrite(PIN_H_REL, PIN_ON);
-  digitalWrite(PIN_L_REL, PIN_ON);
-  digitalWrite(PIN_N2_REL, PIN_ON);
+  // открытие клапана сброса давления
+  digitalWrite(PIN_REL_VALVE, PIN_ON);
 
   display.print(".");
   display.display();
@@ -74,9 +72,7 @@ void setup()
   delay(2000);
 
   // закрытие клапанов сброса давления
-  digitalWrite(PIN_H_REL, PIN_OFF);
-  digitalWrite(PIN_L_REL, PIN_OFF);
-  digitalWrite(PIN_N2_REL, PIN_OFF);
+  digitalWrite(PIN_REL_VALVE, PIN_OFF);
 
   display.print(".");
   display.display();
@@ -109,6 +105,11 @@ void setup()
   display.display();
   logMessage(LOG_MODBUS, "ModBus registers configured");
 
+  attachInterrupt(PIN_ISR, sendFlow, FALLING);
+  display.print(".");
+  display.display();
+  logMessage(LOG_MODBUS, "Прерывание включено");
+
   logMessage(LOG_INFO, "System initialization completed");
 
   // первичная разметка дисплея
@@ -131,7 +132,8 @@ void loop()
 
 void ChannelSurvey()
 {
-  if (Channels[CurrentChannel] || !Channels[CurrentChannel]->IsFlowSet)
+
+  if (Channels[CurrentChannel])
   {
     // ОПРОС КАНАЛА
   }
@@ -145,6 +147,13 @@ void ValveSetOff()
   digitalWrite(PIN_L_VALVE, PIN_OFF);
   digitalWrite(PIN_H_VALVE, PIN_OFF);
   digitalWrite(PIN_N2_VALVE, PIN_OFF);
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    Channels[i]->setAS200SetFlow(0);
+    Channels[i]->IsFlowSet = false;
+  }
+
   digitalWrite(PIN_REL_VALVE, PIN_ON);
   relTimer.start();
   ValveOpen = 0;
@@ -153,14 +162,56 @@ void ValveSetOff()
 
 void ValveSetH()
 {
+  digitalWrite(PIN_L_VALVE, PIN_OFF);
+  digitalWrite(PIN_N2_VALVE, PIN_OFF);
+  digitalWrite(PIN_H_VALVE, PIN_ON);
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    if (!Channels[i] || Channels[i]->IsFlowSet)
+      continue;
+    Channels[i]->setAS200SetFlow(Data.Flow);
+    Channels[i]->IsFlowSet = false;
+  }
+
+  ValveOpen = 1;
+  progressBarTime = millis();
 }
 
 void ValveSetL()
 {
+  digitalWrite(PIN_N2_VALVE, PIN_OFF);
+  digitalWrite(PIN_H_VALVE, PIN_OFF);
+  digitalWrite(PIN_L_VALVE, PIN_ON);
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    if (!Channels[i] || Channels[i]->IsFlowSet)
+      continue;
+    Channels[i]->setAS200SetFlow(Data.Flow);
+    Channels[i]->IsFlowSet = false;
+  }
+
+  ValveOpen = 2;
+  progressBarTime = millis();
 }
 
 void ValveSetN2()
 {
+  digitalWrite(PIN_L_VALVE, PIN_OFF);
+  digitalWrite(PIN_H_VALVE, PIN_OFF);
+  digitalWrite(PIN_N2_VALVE, PIN_ON);
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    if (!Channels[i] || Channels[i]->IsFlowSet)
+      continue;
+    Channels[i]->setAS200SetFlow(Data.Flow);
+    Channels[i]->IsFlowSet = false;
+  }
+
+  ValveOpen = 3;
+  progressBarTime = millis();
 }
 
 void SlavePoll()
@@ -193,6 +244,7 @@ void SlavePoll()
       TopStringUpdate = true;
       flowChanged = true;
       Data.Flow = SlaveRegs[MBSL_R_FLOW];
+      logMessage(LOG_INFO, "Получены настройки потока");
     }
 
     if (SlaveRegs[MBSL_R_DELTA] != Data.Delta && SlaveRegs[MBSL_R_DELTA] < 101 && SlaveRegs[MBSL_R_DELTA] > 29)
@@ -200,6 +252,7 @@ void SlavePoll()
       TopStringUpdate = true;
       flowChanged = true;
       Data.Delta = (byte)SlaveRegs[MBSL_R_DELTA];
+      logMessage(LOG_INFO, "Получены настройки дельты");
     }
 
     if (SlaveRegs[MBSL_R_OC_VALVE] != ValveOpen && SlaveRegs[MBSL_R_OC_VALVE] < 5)
@@ -209,38 +262,23 @@ void SlavePoll()
       switch (ValveOpen)
       {
       case 1:
-        digitalWrite(PIN_L_VALVE, PIN_OFF);
-        digitalWrite(PIN_N2_VALVE, PIN_OFF);
-        digitalWrite(PIN_H_VALVE, PIN_ON);
+        ValveSetH();
         break;
       case 2:
-        digitalWrite(PIN_H_VALVE, PIN_OFF);
-        digitalWrite(PIN_N2_VALVE, PIN_OFF);
-        digitalWrite(PIN_L_VALVE, PIN_ON);
+        ValveSetL();
         break;
       case 4:
-        digitalWrite(PIN_L_VALVE, PIN_OFF);
-        digitalWrite(PIN_H_VALVE, PIN_OFF);
-        digitalWrite(PIN_N2_VALVE, PIN_ON);
+        ValveSetN2();
         break;
-
       default:
-        digitalWrite(PIN_L_VALVE, PIN_OFF);
-        digitalWrite(PIN_H_VALVE, PIN_OFF);
-        digitalWrite(PIN_N2_VALVE, PIN_OFF);
-        ValveOpen = 0;
+        ValveSetOff();
         break;
       }
       if (!ValveOpen)
       {
-        for (size_t i = 0; i < 4; i++)
-        {
-          if (!Channels[i])
-            continue;
-          Channels[i]->setAS200SetFlow(0);
-          Channels[i]->IsFlowSet = false;
-        }
+        ValveSetOff();
       }
+      logMessage(LOG_INFO, "Изменено состояние клапанов: " + String(ValveOpen));
     }
 
     if ((SlaveRegs[MBSL_R_CHANNELS] >> 8) != Data.ChannelsEnable && (SlaveRegs[MBSL_R_CHANNELS] >> 8) < 16)
@@ -269,6 +307,7 @@ void SlavePoll()
           Channels[i]->FlowStabilized = false;
         }
       }
+      logMessage(LOG_INFO, "Изменены настройки каналов");
     }
 
     if (mbChanged)
