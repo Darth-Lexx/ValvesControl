@@ -23,11 +23,12 @@ byte CurrentChannel = 0;
 // флаг перерисовки верхней строки
 bool TopStringUpdate = false;
 
-volatile ChannelStruct Channel1Data;
-volatile ChannelStruct Channel2Data;
-volatile ChannelStruct Channel3Data;
-volatile ChannelStruct Channel4Data;
+ChannelStruct Channel1Data;
+ChannelStruct Channel2Data;
+ChannelStruct Channel3Data;
+ChannelStruct Channel4Data;
 ChannelStruct *Channels[4] = {&Channel1Data, &Channel2Data, &Channel3Data, &Channel4Data};
+volatile byte ChannelForFlowSet;
 
 EEPROMData Data;
 
@@ -142,6 +143,21 @@ void ChannelSurvey()
     CurrentChannel = 0;
 }
 
+void sendFlow()
+{
+  if (ChannelForFlowSet == 0)
+    return;
+
+  byte r = AS200Master.writeMultipleHoldingRegisters(ChannelForFlowSet, AS200_SET_FLOW_H, Channels[ChannelForFlowSet - 1]->AS200SetFlowArray, 2);
+
+  if (!r)
+  {
+    Channels[ChannelForFlowSet - 1]->setIsFlowSet(true);
+  }
+
+  ChannelForFlowSet = 0;
+}
+
 void ValveSetOff()
 {
   digitalWrite(PIN_L_VALVE, PIN_OFF);
@@ -151,7 +167,7 @@ void ValveSetOff()
   for (size_t i = 0; i < 4; i++)
   {
     Channels[i]->setAS200SetFlow(0);
-    Channels[i]->IsFlowSet = false;
+    Channels[i]->setIsFlowSet(false);
   }
 
   digitalWrite(PIN_REL_VALVE, PIN_ON);
@@ -168,10 +184,10 @@ void ValveSetH()
 
   for (size_t i = 0; i < 4; i++)
   {
-    if (!Channels[i] || Channels[i]->IsFlowSet)
+    if (!Channels[i] || Channels[i]->getIsFlowSet())
       continue;
     Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->IsFlowSet = false;
+    Channels[i]->setIsFlowSet(false);
   }
 
   ValveOpen = 1;
@@ -186,10 +202,10 @@ void ValveSetL()
 
   for (size_t i = 0; i < 4; i++)
   {
-    if (!Channels[i] || Channels[i]->IsFlowSet)
+    if (!Channels[i] || Channels[i]->getIsFlowSet())
       continue;
     Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->IsFlowSet = false;
+    Channels[i]->setIsFlowSet(false);
   }
 
   ValveOpen = 2;
@@ -204,10 +220,10 @@ void ValveSetN2()
 
   for (size_t i = 0; i < 4; i++)
   {
-    if (!Channels[i] || Channels[i]->IsFlowSet)
+    if (!Channels[i] || Channels[i]->getIsFlowSet())
       continue;
     Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->IsFlowSet = false;
+    Channels[i]->setIsFlowSet(false);
   }
 
   ValveOpen = 3;
@@ -297,13 +313,13 @@ void SlavePoll()
           *Channels[i] = true;
           Channels[i]->FlowStabilized = false;
           Channels[i]->setAS200SetFlow(Data.Flow);
-          Channels[i]->IsFlowSet = false;
+          Channels[i]->setIsFlowSet(false);
         }
         else
         {
           *Channels[i] = false;
           Channels[i]->setAS200SetFlow(0);
-          Channels[i]->IsFlowSet = false;
+          Channels[i]->setIsFlowSet(false);
           Channels[i]->FlowStabilized = false;
         }
       }

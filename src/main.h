@@ -175,6 +175,7 @@ extern ModbusRTUMaster AFM07Master;
 
 extern uint16_t SlaveRegs[17];
 extern uint16_t SlaveRWRegsActual[2];
+extern byte ChannelForFlowSet;
 
 union FloatConverter
 {
@@ -185,14 +186,14 @@ union FloatConverter
 struct ChannelStruct
 {
     uint16_t AS200SetFlowArray[2] = {0, 0};
-    float getAS200SetFlow() volatile const
+    float getAS200SetFlow() const
     {
         FloatConverter converter;
         converter.asWords[0] = AS200SetFlowArray[1];
         converter.asWords[1] = AS200SetFlowArray[0];
         return converter.asFloat;
     }
-    void setAS200SetFlow(float value) volatile
+    void setAS200SetFlow(float value)
     {
         FloatConverter converter;
         converter.asFloat = value;
@@ -201,7 +202,7 @@ struct ChannelStruct
     }
 
     uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
-    float getAFM07Acc() volatile const
+    float getAFM07Acc() const
     {
         FloatConverter converter;
         converter.asWords[0] = AFM07Reg[AFM07_ACC_FLOW_L];
@@ -213,15 +214,32 @@ struct ChannelStruct
     byte AS200MbError = 0;
     byte AFM07MbError = 0;
     byte AFM07OffSet = 0;
-    bool FlowStabilized = false;
-    bool IsFlowSet = false;
+    volatile bool FlowStabilized = false;
+
+    void setIsFlowSet(bool b)
+    {
+        if (IsFlowSet != b)
+        {
+            IsFlowSet = b;
+            if (!b)
+            {
+                ChannelForFlowSet = AFM07MbAdr / 2;
+                digitalWrite(PIN_ISR, HIGH);
+                digitalWrite(PIN_ISR, LOW);
+            }
+        }
+    }
+    bool getIsFlowSet()
+    {
+        return IsFlowSet;
+    }
 
     operator bool() const
     {
         return Enabled;
     }
 
-    ChannelStruct &operator=(bool value) 
+    ChannelStruct &operator=(bool value)
     {
         Enabled = value;
         return *this;
@@ -234,6 +252,7 @@ struct ChannelStruct
 
 private:
     bool Enabled = false; // флаг включения канала
+    bool IsFlowSet = false;
 };
 
 struct EEPROMData
@@ -267,5 +286,7 @@ void ValveSetOff();
 void ValveSetH();
 void ValveSetL();
 void ValveSetN2();
+
+void sendFlow(); // ISR
 
 #endif
