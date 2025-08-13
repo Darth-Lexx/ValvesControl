@@ -201,6 +201,22 @@ struct ChannelStruct
         AS200SetFlowArray[1] = converter.asWords[0];
     }
 
+    uint16_t AS200ActualFlowArray[2] = {0, 0};
+    float getAS200ActualFlow() const
+    {
+        FloatConverter converter;
+        converter.asWords[0] = AS200ActualFlowArray[1];
+        converter.asWords[1] = AS200ActualFlowArray[0];
+        return converter.asFloat;
+    }
+    void setAS200ActualFlow(float value)
+    {
+        FloatConverter converter;
+        converter.asFloat = value;
+        AS200ActualFlowArray[0] = converter.asWords[1];
+        AS200ActualFlowArray[1] = converter.asWords[0];
+    }
+
     uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
     float getAFM07Acc() const
     {
@@ -215,6 +231,7 @@ struct ChannelStruct
     byte AFM07MbError = 0;
     byte AFM07OffSet = 0;
     volatile bool FlowStabilized = false;
+    volatile unsigned long time = 0;
 
     void setIsFlowSet(bool b)
     {
@@ -223,7 +240,9 @@ struct ChannelStruct
             IsFlowSet = b;
             if (!b)
             {
+                FlowStabilized = false;
                 ChannelForFlowSet = AFM07MbAdr / 2;
+                bitClear(SlaveRegs[MBSL_R_CHANNELS], ChannelForFlowSet - 1);
                 digitalWrite(PIN_ISR, HIGH);
                 digitalWrite(PIN_ISR, LOW);
             }

@@ -136,7 +136,50 @@ void ChannelSurvey()
 
   if (Channels[CurrentChannel])
   {
-    // ОПРОС КАНАЛА
+    Channels[CurrentChannel]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[CurrentChannel]->AFM07MbAdr, AFM07_FLOW, Channels[CurrentChannel]->AFM07Reg, sizeof(Channels[CurrentChannel]->AFM07Reg));
+    Channels[CurrentChannel]->AS200MbError = AS200Master.readHoldingRegisters(Channels[CurrentChannel]->AS200MbAdr, AS200_FLOW_H, Channels[CurrentChannel]->AS200ActualFlowArray, sizeof(Channels[CurrentChannel]->AS200ActualFlowArray));
+
+    if (Channels[CurrentChannel]->getIsFlowSet() == false)
+    {
+      logMessage(LOG_INFO, "IsFlowSet не было установлено в true в прерывании");
+
+      ChannelForFlowSet = CurrentChannel + 1;
+      bitClear(SlaveRegs[MBSL_R_CHANNELS], CurrentChannel);
+      digitalWrite(PIN_ISR, HIGH);
+      digitalWrite(PIN_ISR, LOW);
+
+      if (Channels[CurrentChannel]->getIsFlowSet() == false)
+      {
+        *Channels[CurrentChannel] = false;
+        switch (CurrentChannel)
+        {
+        case 0:
+          digitalWrite(PIN_CTRL1_POWER, PIN_OFF);
+          break;
+        case 1:
+          digitalWrite(PIN_CTRL2_POWER, PIN_OFF);
+          break;
+        case 2:
+          digitalWrite(PIN_CTRL3_POWER, PIN_OFF);
+          break;
+        case 3:
+          digitalWrite(PIN_CTRL4_POWER, PIN_OFF);
+          break;
+        }
+        logMessage(LOG_ERROR, "IsFlowSet повторно не было установлено. Канал " + String(CurrentChannel + 1) + " отключен");
+        return;
+      }
+    }
+
+    unsigned long t = millis() - Channels[CurrentChannel]->time;
+
+    if (!Channels[CurrentChannel]->FlowStabilized && Channels[CurrentChannel]->getAS200SetFlow() > 0)
+    {
+      if (t > 1000)
+      {
+        ///////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      }
+    }
   }
   CurrentChannel++;
   if (CurrentChannel > 3)
@@ -148,9 +191,11 @@ void sendFlow()
   if (ChannelForFlowSet == 0)
     return;
 
-  byte r = AS200Master.writeMultipleHoldingRegisters(ChannelForFlowSet, AS200_SET_FLOW_H, Channels[ChannelForFlowSet - 1]->AS200SetFlowArray, 2);
+  Channels[ChannelForFlowSet - 1]->AS200MbError = AS200Master.writeMultipleHoldingRegisters(ChannelForFlowSet, AS200_SET_FLOW_H, Channels[ChannelForFlowSet - 1]->AS200SetFlowArray, 2);
+  if (Channels[ChannelForFlowSet - 1]->getAS200SetFlow() > 0)
+    Channels[ChannelForFlowSet - 1]->time = millis();
 
-  if (!r)
+  if (Channels[ChannelForFlowSet - 1]->AS200MbError == 0)
   {
     Channels[ChannelForFlowSet - 1]->setIsFlowSet(true);
   }
