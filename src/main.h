@@ -164,9 +164,9 @@ extern byte ValveOpen;
 #define PIN_BTN_L 27
 #define PIN_BTN_N2 28
 
-#define PIN_RE_AS200 44
+//#define PIN_RE_AS200 44
 #define PIN_DE_AS200 45
-#define PIN_RE_AFM07 42
+//#define PIN_RE_AFM07 42
 #define PIN_DE_AFM07 43
 
 extern ModbusRTUSlave MbSlave;
@@ -175,7 +175,7 @@ extern ModbusRTUMaster AFM07Master;
 
 extern uint16_t SlaveRegs[17];
 extern uint16_t SlaveRWRegsActual[2];
-extern byte ChannelForFlowSet;
+extern volatile byte ChannelForFlowSet;
 
 union FloatConverter
 {
@@ -230,7 +230,7 @@ struct ChannelStruct
     byte AS200MbError = 0;
     byte AFM07MbError = 0;
     byte AFM07OffSet = 0;
-    volatile bool FlowStabilized = false;
+    volatile bool FlowStabilized = true;
     volatile unsigned long time = 0;
 
     void setIsFlowSet(bool b)
@@ -271,7 +271,7 @@ struct ChannelStruct
 
 private:
     bool Enabled = false; // флаг включения канала
-    bool IsFlowSet = false;
+    bool IsFlowSet = true;
 };
 
 struct EEPROMData

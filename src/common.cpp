@@ -125,6 +125,7 @@ void pinInit()
     digitalWrite(PIN_H_VALVE, PIN_OFF);
     digitalWrite(PIN_L_VALVE, PIN_OFF);
     digitalWrite(PIN_N2_VALVE, PIN_OFF);
+
     digitalWrite(PIN_CTRL1_POWER, PIN_OFF);
     digitalWrite(PIN_CTRL2_POWER, PIN_OFF);
     digitalWrite(PIN_CTRL3_POWER, PIN_OFF);
@@ -215,8 +216,8 @@ void UARTinit()
     logMessage(LOG_MODBUS, "ModBus Slave initialized. Address: " + String(Data.ModBusAdr) + ", Speed: " + String(Data.ModBusSpeed * 4800) + " baud");
 
     // Инициализация связи с AS200 и AFM07
-    MasterSerialAS200.begin(38400, SERIAL_8N2);
-    AS200Master.begin(38400, SERIAL_8N2);
+    MasterSerialAS200.begin(38400, SERIAL_8N1);
+    AS200Master.begin(38400, SERIAL_8N1);
     MasterSerialAFM07.begin(115200, SERIAL_8N2);
     AFM07Master.begin(115200, SERIAL_8N2);
 
@@ -228,8 +229,8 @@ void UARTinit()
 void AS200AFM07Init()
 {
     for (byte i = 0; i < 4; i++)
-    {
-        Channels[i]->AS200MbAdr = 1 + i * 2;
+    {  
+        Channels[i]->AS200MbAdr = 11 + i;
         Channels[i]->AFM07MbAdr = 2 + i * 2;
         Channels[i]->setAS200SetFlow(Data.Flow);
 

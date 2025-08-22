@@ -9,7 +9,7 @@ unsigned long lastMillisCheck = 0;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 ModbusRTUSlave MbSlave(SlaveSerial);
-ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_RE_AS200, PIN_DE_AS200);
+ModbusRTUMaster AS200Master(MasterSerialAS200, PIN_DE_AS200);
 ModbusRTUMaster AFM07Master(MasterSerialAFM07, PIN_DE_AFM07);
 
 uint16_t SlaveRegs[17] = {0};
@@ -80,10 +80,15 @@ void setup()
   logMessage(LOG_INFO, "Pressure relief valves closed");
 
   // включение AS200
+  delay(3000);
   digitalWrite(PIN_CTRL1_POWER, PIN_ON);
+  delay(3000);
   digitalWrite(PIN_CTRL2_POWER, PIN_ON);
+  delay(3000);
   digitalWrite(PIN_CTRL3_POWER, PIN_ON);
+  delay(3000);
   digitalWrite(PIN_CTRL4_POWER, PIN_ON);
+  delay(3000);
 
   display.print(".");
   display.display();
@@ -119,7 +124,7 @@ void setup()
 
 void loop()
 {
-  // обработка запроса по модбас от ПК
+  //обработка запроса по модбас от ПК
   SlavePoll();
 
   ChannelSurvey();
