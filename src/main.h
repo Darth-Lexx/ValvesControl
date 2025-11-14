@@ -311,6 +311,4 @@ void ValveSetH();
 void ValveSetL();
 void ValveSetN2();
 
-void sendFlow(); // ISR
-
 #endif

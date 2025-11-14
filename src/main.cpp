@@ -29,50 +29,10 @@ ChannelStruct Channel2Data;
 ChannelStruct Channel3Data;
 ChannelStruct Channel4Data;
 ChannelStruct *Channels[4] = {&Channel1Data, &Channel2Data, &Channel3Data, &Channel4Data};
-volatile byte ChannelForFlowSet;
 
 EEPROMData Data;
 
 uTimer16<millis> relTimer;
-
-#define FLOW_QUEUE_SIZE 8
-
-struct FlowQueueItem
-{
-  uint8_t channelIndex; // 0..3
-};
-
-FlowQueueItem flowQueue[FLOW_QUEUE_SIZE];
-uint8_t flowQueueHead = 0;
-uint8_t flowQueueTail = 0;
-
-bool isFlowQueueEmpty()
-{
-  return flowQueueHead == flowQueueTail;
-}
-
-bool enqueueFlowCommand(uint8_t ch)
-{
-  uint8_t nextTail = (uint8_t)((flowQueueTail + 1) % FLOW_QUEUE_SIZE);
-  if (nextTail == flowQueueHead)
-  {
-    logMessage(LOG_WARNING, "Flow queue overflow, command dropped for channel " + String(ch + 1));
-    return false;
-  }
-  flowQueue[flowQueueTail].channelIndex = ch;
-  flowQueueTail = nextTail;
-  return true;
-}
-
-bool dequeueFlowCommand(FlowQueueItem &item)
-{
-  if (isFlowQueueEmpty())
-    return false;
-
-  item = flowQueue[flowQueueHead];
-  flowQueueHead = (uint8_t)((flowQueueHead + 1) % FLOW_QUEUE_SIZE);
-  return true;
-}
 
 
 void setup()
