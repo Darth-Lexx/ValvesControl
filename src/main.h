@@ -185,6 +185,23 @@ union FloatConverter
 struct ChannelStruct
 {
     uint16_t AS200SetFlowArray[2] = {0, 0};
+    uint16_t AS200ActualFlowArray[2] = {0, 0};
+
+    uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
+
+    byte AS200MbAdr = 1;
+    byte AFM07MbAdr = 2;
+    byte AS200MbError = 0;
+    byte AFM07MbError = 0;
+    byte AFM07OffSet = 0;
+
+    bool Enabled = false;
+    bool IsFlowSet = true;
+    bool FlowStabilized = false;
+    unsigned long time = 0;    // время последнего SetFlow
+    float pidIntegral = 0.0f;  // подготовка под PID
+    float pidLastError = 0.0f; // подготовка под PID
+
     float getAS200SetFlow() const
     {
         FloatConverter converter;
@@ -200,7 +217,6 @@ struct ChannelStruct
         AS200SetFlowArray[1] = converter.asWords[0];
     }
 
-    uint16_t AS200ActualFlowArray[2] = {0, 0};
     float getAS200ActualFlow() const
     {
         FloatConverter converter;
@@ -216,7 +232,6 @@ struct ChannelStruct
         AS200ActualFlowArray[1] = converter.asWords[0];
     }
 
-    uint16_t AFM07Reg[5] = {0, 0, 0, 0, 0};
     float getAFM07Acc() const
     {
         FloatConverter converter;
@@ -224,13 +239,6 @@ struct ChannelStruct
         converter.asWords[1] = AFM07Reg[AFM07_ACC_FLOW_H];
         return converter.asFloat;
     }
-    byte AS200MbAdr = 1;
-    byte AFM07MbAdr = 2;
-    byte AS200MbError = 0;
-    byte AFM07MbError = 0;
-    byte AFM07OffSet = 0;
-    volatile bool FlowStabilized = true;
-    volatile unsigned long time = 0;
 
     void setIsFlowSet(bool b)
     {
@@ -273,10 +281,6 @@ struct ChannelStruct
     {
         return !Enabled;
     }
-
-private:
-    bool Enabled = false; // флаг включения канала
-    bool IsFlowSet = true;
 };
 
 struct EEPROMData
@@ -310,5 +314,17 @@ void ValveSetOff();
 void ValveSetH();
 void ValveSetL();
 void ValveSetN2();
+
+inline void SetFlowForAllChannels(uint16_t flow)
+{
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (!Channels[i] || Channels[i]->getIsFlowSet())
+            continue;
+        Channels[i]->setAS200SetFlow(flow);
+        Channels[i]->setIsFlowSet(false);
+        Channels[i]->FlowStabilized = false;
+    }
+}
 
 #endif

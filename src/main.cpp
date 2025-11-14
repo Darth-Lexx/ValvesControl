@@ -34,7 +34,6 @@ EEPROMData Data;
 
 uTimer16<millis> relTimer;
 
-
 void setup()
 {
   (void)EEPROM;
@@ -136,7 +135,7 @@ void loop()
 
 void ChannelSurvey()
 {
-  ChannelStruct* ch = Channels[CurrentChannel];
+  ChannelStruct *ch = Channels[CurrentChannel];
 
   if (ch)
   {
@@ -161,7 +160,7 @@ void ChannelSurvey()
     {
       if (t > 1000)
       {
-        ///////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // PID регулировка будет здесь позже
       }
     }
   }
@@ -194,13 +193,7 @@ void ValveSetH()
   digitalWrite(PIN_N2_VALVE, PIN_OFF);
   digitalWrite(PIN_H_VALVE, PIN_ON);
 
-  for (size_t i = 0; i < 4; i++)
-  {
-    if (!Channels[i] || Channels[i]->getIsFlowSet())
-      continue;
-    Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->setIsFlowSet(false);
-  }
+  SetFlowForAllChannels(Data.Flow);
 
   ValveOpen = 1;
   progressBarTime = millis();
@@ -212,13 +205,7 @@ void ValveSetL()
   digitalWrite(PIN_H_VALVE, PIN_OFF);
   digitalWrite(PIN_L_VALVE, PIN_ON);
 
-  for (size_t i = 0; i < 4; i++)
-  {
-    if (!Channels[i] || Channels[i]->getIsFlowSet())
-      continue;
-    Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->setIsFlowSet(false);
-  }
+  SetFlowForAllChannels(Data.Flow);
 
   ValveOpen = 2;
   progressBarTime = millis();
@@ -230,13 +217,7 @@ void ValveSetN2()
   digitalWrite(PIN_H_VALVE, PIN_OFF);
   digitalWrite(PIN_N2_VALVE, PIN_ON);
 
-  for (size_t i = 0; i < 4; i++)
-  {
-    if (!Channels[i] || Channels[i]->getIsFlowSet())
-      continue;
-    Channels[i]->setAS200SetFlow(Data.Flow);
-    Channels[i]->setIsFlowSet(false);
-  }
+  SetFlowForAllChannels(Data.Flow);
 
   ValveOpen = 4;
   progressBarTime = millis();
