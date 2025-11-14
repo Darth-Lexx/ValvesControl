@@ -154,14 +154,56 @@ void ChannelSurvey()
       // можно будет сделать позже через счётчик попыток / ошибки ModBus
     }
 
-    unsigned long t = millis() - ch->time;
-
-    if (!ch->FlowStabilized && ch->getAS200SetFlow() > 0)
+    // --- P-регулятор компенсации утечек ---
+    unsigned long now = millis();
+    if (ch->getAS200SetFlow() > 0 && (now - ch->lastRegulationTime) >= REGULATION_INTERVAL)
     {
-      if (t > 1000)
+      ch->lastRegulationTime = now;
+
+      float flowAFM = ch->AFM07Reg[AFM07_FLOW];
+      float error = (float)Data.Flow - flowAFM;
+
+      // флаг стабилизации — только для Modbus, не влияет на работу регулятора
+      if (abs(error) <= Data.Delta)
       {
-        // PID регулировка будет здесь позже
+        if (!ch->FlowStabilized)
+        {
+          ch->FlowStabilized = true;
+          bitSet(SlaveRegs[MBSL_R_CHANNELS], CurrentChannel);
+        }
       }
+      else
+      {
+        if (ch->FlowStabilized)
+        {
+          ch->FlowStabilized = false;
+          bitClear(SlaveRegs[MBSL_R_CHANNELS], CurrentChannel);
+        }
+      }
+
+      // --- выбор Kp ---
+      float Kp = (abs(error) > (2 * Data.Delta)) ? KP_FAR : KP_NEAR;
+
+      float delta = Kp * error;
+
+      // ограничение максимального изменения за цикл
+      if (delta > MAX_STEP)
+        delta = MAX_STEP;
+      if (delta < -MAX_STEP)
+        delta = -MAX_STEP;
+
+      float currentSet = ch->getAS200SetFlow();
+      float updatedSet = currentSet + delta;
+
+      // ограничение диапазона
+      if (updatedSet < FLOW_MIN)
+        updatedSet = FLOW_MIN;
+      if (updatedSet > FLOW_MAX)
+        updatedSet = FLOW_MAX;
+
+      // отправка нового значения
+      ch->setAS200SetFlow(updatedSet);
+      ch->setIsFlowSet(false);
     }
   }
   CurrentChannel++;

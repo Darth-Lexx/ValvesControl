@@ -117,6 +117,14 @@ extern byte ValveOpen;
 #define MBSL_DELTA_D 30
 #define MBSL_FLOW_D 600
 
+// ---- Константы регулирования ----
+#define KP_NEAR   0.3f
+#define KP_FAR    0.8f
+#define MAX_STEP  50.0f                // максимум изменения SetFlow за 1 цикл
+#define FLOW_MIN  0.0f
+#define FLOW_MAX  1000.0f
+#define REGULATION_INTERVAL 1500       // минимальная задержка между регулировками (мс)
+
 //--ModBus AS200 registers  --//
 #define AS200_FLOW_H 0 // float ro
 #define AS200_FLOW_L 1
@@ -201,6 +209,7 @@ struct ChannelStruct
     unsigned long time = 0;    // время последнего SetFlow
     float pidIntegral = 0.0f;  // подготовка под PID
     float pidLastError = 0.0f; // подготовка под PID
+    unsigned long lastRegulationTime = 0;
 
     float getAS200SetFlow() const
     {
