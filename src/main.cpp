@@ -136,13 +136,14 @@ void loop()
 
 void ChannelSurvey()
 {
+  ChannelStruct* ch = Channels[CurrentChannel];
 
-  if (Channels[CurrentChannel])
+  if (ch)
   {
-    Channels[CurrentChannel]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[CurrentChannel]->AFM07MbAdr, AFM07_FLOW, Channels[CurrentChannel]->AFM07Reg, sizeof(Channels[CurrentChannel]->AFM07Reg));
-    Channels[CurrentChannel]->AS200MbError = AS200Master.readHoldingRegisters(Channels[CurrentChannel]->AS200MbAdr, AS200_FLOW_H, Channels[CurrentChannel]->AS200ActualFlowArray, sizeof(Channels[CurrentChannel]->AS200ActualFlowArray));
+    ch->AFM07MbError = AFM07Master.readHoldingRegisters(ch->AFM07MbAdr, AFM07_FLOW, ch->AFM07Reg, array_count(ch->AFM07Reg));
+    ch->AS200MbError = AS200Master.readHoldingRegisters(ch->AS200MbAdr, AS200_FLOW_H, ch->AS200ActualFlowArray, array_count(ch->AS200SetFlowArray));
 
-    if (!Channels[CurrentChannel]->getIsFlowSet())
+    if (!ch->getIsFlowSet())
     {
       logMessage(LOG_INFO, "IsFlowSet не установлено в true, повторная попытка отправки команды для канала " + String(CurrentChannel + 1));
 
@@ -154,9 +155,9 @@ void ChannelSurvey()
       // можно будет сделать позже через счётчик попыток / ошибки ModBus
     }
 
-    unsigned long t = millis() - Channels[CurrentChannel]->time;
+    unsigned long t = millis() - ch->time;
 
-    if (!Channels[CurrentChannel]->FlowStabilized && Channels[CurrentChannel]->getAS200SetFlow() > 0)
+    if (!ch->FlowStabilized && ch->getAS200SetFlow() > 0)
     {
       if (t > 1000)
       {
@@ -237,7 +238,7 @@ void ValveSetN2()
     Channels[i]->setIsFlowSet(false);
   }
 
-  ValveOpen = 3;
+  ValveOpen = 4;
   progressBarTime = millis();
 }
 
