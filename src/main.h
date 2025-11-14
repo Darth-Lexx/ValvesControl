@@ -22,6 +22,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "font.h"
+#include "flow_dispatcher.h"
 
 // Настройки дисплея
 #define SCREEN_WIDTH 128
@@ -144,7 +145,6 @@ extern byte ValveOpen;
 #define PIN_ON 1
 #define PIN_OFF 0
 
-#define PIN_ISR 2
 #define PIN_RESET 29
 #define PIN_H_VALVE 3
 #define PIN_L_VALVE 4
@@ -164,9 +164,9 @@ extern byte ValveOpen;
 #define PIN_BTN_L 27
 #define PIN_BTN_N2 28
 
-//#define PIN_RE_AS200 44
+// #define PIN_RE_AS200 44
 #define PIN_DE_AS200 45
-//#define PIN_RE_AFM07 42
+// #define PIN_RE_AFM07 42
 #define PIN_DE_AFM07 43
 
 extern ModbusRTUSlave MbSlave;
@@ -175,7 +175,6 @@ extern ModbusRTUMaster AFM07Master;
 
 extern uint16_t SlaveRegs[17];
 extern uint16_t SlaveRWRegsActual[2];
-extern volatile byte ChannelForFlowSet;
 
 union FloatConverter
 {
@@ -241,10 +240,16 @@ struct ChannelStruct
             if (!b)
             {
                 FlowStabilized = false;
-                ChannelForFlowSet = AFM07MbAdr / 2;
-                bitClear(SlaveRegs[MBSL_R_CHANNELS], ChannelForFlowSet - 1);
-                digitalWrite(PIN_ISR, HIGH);
-                digitalWrite(PIN_ISR, LOW);
+
+                // AFM07 адреса 2,4,6,8 → индекс канала 0..3
+                uint8_t channelIndex = (AFM07MbAdr / 2) - 1;
+                if (channelIndex < 4)
+                {
+                    // сбрасываем флаг «расход достигнут» для этого канала
+                    bitClear(SlaveRegs[MBSL_R_CHANNELS], channelIndex);
+                    // ставим запрос на отправку в очередь
+                    requestFlowSend(channelIndex);
+                }
             }
         }
     }

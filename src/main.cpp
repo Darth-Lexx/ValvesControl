@@ -1,6 +1,7 @@
 #include "main.h"
 #include "logs.h"
 #include "common.h"
+#include "flow_dispatcher.h"
 
 // Инициализация времени старта системы
 uint32_t systemOverflows = 0;
@@ -33,6 +34,46 @@ volatile byte ChannelForFlowSet;
 EEPROMData Data;
 
 uTimer16<millis> relTimer;
+
+#define FLOW_QUEUE_SIZE 8
+
+struct FlowQueueItem
+{
+  uint8_t channelIndex; // 0..3
+};
+
+FlowQueueItem flowQueue[FLOW_QUEUE_SIZE];
+uint8_t flowQueueHead = 0;
+uint8_t flowQueueTail = 0;
+
+bool isFlowQueueEmpty()
+{
+  return flowQueueHead == flowQueueTail;
+}
+
+bool enqueueFlowCommand(uint8_t ch)
+{
+  uint8_t nextTail = (uint8_t)((flowQueueTail + 1) % FLOW_QUEUE_SIZE);
+  if (nextTail == flowQueueHead)
+  {
+    logMessage(LOG_WARNING, "Flow queue overflow, command dropped for channel " + String(ch + 1));
+    return false;
+  }
+  flowQueue[flowQueueTail].channelIndex = ch;
+  flowQueueTail = nextTail;
+  return true;
+}
+
+bool dequeueFlowCommand(FlowQueueItem &item)
+{
+  if (isFlowQueueEmpty())
+    return false;
+
+  item = flowQueue[flowQueueHead];
+  flowQueueHead = (uint8_t)((flowQueueHead + 1) % FLOW_QUEUE_SIZE);
+  return true;
+}
+
 
 void setup()
 {
@@ -111,11 +152,6 @@ void setup()
   display.display();
   logMessage(LOG_MODBUS, "ModBus registers configured");
 
-  attachInterrupt(PIN_ISR, sendFlow, FALLING);
-  display.print(".");
-  display.display();
-  logMessage(LOG_MODBUS, "Прерывание включено");
-
   logMessage(LOG_INFO, "System initialization completed");
 
   // первичная разметка дисплея
@@ -124,7 +160,7 @@ void setup()
 
 void loop()
 {
-  //обработка запроса по модбас от ПК
+  // обработка запроса по модбас от ПК
   SlavePoll();
 
   ChannelSurvey();
@@ -134,6 +170,8 @@ void loop()
     digitalWrite(PIN_REL_VALVE, PIN_OFF);
     relTimer.stop();
   }
+
+  processFlowQueue();
 }
 
 void ChannelSurvey()
@@ -144,36 +182,16 @@ void ChannelSurvey()
     Channels[CurrentChannel]->AFM07MbError = AFM07Master.readHoldingRegisters(Channels[CurrentChannel]->AFM07MbAdr, AFM07_FLOW, Channels[CurrentChannel]->AFM07Reg, sizeof(Channels[CurrentChannel]->AFM07Reg));
     Channels[CurrentChannel]->AS200MbError = AS200Master.readHoldingRegisters(Channels[CurrentChannel]->AS200MbAdr, AS200_FLOW_H, Channels[CurrentChannel]->AS200ActualFlowArray, sizeof(Channels[CurrentChannel]->AS200ActualFlowArray));
 
-    if (Channels[CurrentChannel]->getIsFlowSet() == false)
+    if (!Channels[CurrentChannel]->getIsFlowSet())
     {
-      logMessage(LOG_INFO, "IsFlowSet не было установлено в true в прерывании");
+      logMessage(LOG_INFO, "IsFlowSet не установлено в true, повторная попытка отправки команды для канала " + String(CurrentChannel + 1));
 
-      ChannelForFlowSet = CurrentChannel + 1;
+      // повторно выставляем запрос на отправку SetFlow
+      requestFlowSend(CurrentChannel);
       bitClear(SlaveRegs[MBSL_R_CHANNELS], CurrentChannel);
-      digitalWrite(PIN_ISR, HIGH);
-      digitalWrite(PIN_ISR, LOW);
 
-      if (Channels[CurrentChannel]->getIsFlowSet() == false)
-      {
-        *Channels[CurrentChannel] = false;
-        switch (CurrentChannel)
-        {
-        case 0:
-          digitalWrite(PIN_CTRL1_POWER, PIN_OFF);
-          break;
-        case 1:
-          digitalWrite(PIN_CTRL2_POWER, PIN_OFF);
-          break;
-        case 2:
-          digitalWrite(PIN_CTRL3_POWER, PIN_OFF);
-          break;
-        case 3:
-          digitalWrite(PIN_CTRL4_POWER, PIN_OFF);
-          break;
-        }
-        logMessage(LOG_ERROR, "IsFlowSet повторно не было установлено. Канал " + String(CurrentChannel + 1) + " отключен");
-        return;
-      }
+      // на этом шаге НИЧЕГО не отключаем, логику автоотключения
+      // можно будет сделать позже через счётчик попыток / ошибки ModBus
     }
 
     unsigned long t = millis() - Channels[CurrentChannel]->time;
@@ -189,23 +207,6 @@ void ChannelSurvey()
   CurrentChannel++;
   if (CurrentChannel > 3)
     CurrentChannel = 0;
-}
-
-void sendFlow()
-{
-  if (ChannelForFlowSet == 0)
-    return;
-
-  Channels[ChannelForFlowSet - 1]->AS200MbError = AS200Master.writeMultipleHoldingRegisters(ChannelForFlowSet, AS200_SET_FLOW_H, Channels[ChannelForFlowSet - 1]->AS200SetFlowArray, 2);
-  if (Channels[ChannelForFlowSet - 1]->getAS200SetFlow() > 0)
-    Channels[ChannelForFlowSet - 1]->time = millis();
-
-  if (Channels[ChannelForFlowSet - 1]->AS200MbError == 0)
-  {
-    Channels[ChannelForFlowSet - 1]->setIsFlowSet(true);
-  }
-
-  ChannelForFlowSet = 0;
 }
 
 void ValveSetOff()
